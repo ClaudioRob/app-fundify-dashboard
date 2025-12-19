@@ -1,7 +1,13 @@
-import { Bell, Search, Settings } from './icons'
+import { Bell, Search, Settings, Plus, Upload, Trash2 } from './icons'
 import './Header.css'
 
-const Header = () => {
+interface HeaderProps {
+  onNewTransaction: () => void
+  onImport: () => void
+  onClearData: () => void
+}
+
+const Header = ({ onNewTransaction, onImport, onClearData }: HeaderProps) => {
   return (
     <header className="header">
       <div className="header-content">
@@ -10,6 +16,20 @@ const Header = () => {
           <span className="logo-subtitle">Dashboard Financeiro</span>
         </div>
         <div className="header-right">
+          <div className="header-actions">
+            <button className="action-button primary" onClick={onNewTransaction} title="Nova Transação">
+              <Plus size={18} />
+              <span>Nova Transação</span>
+            </button>
+            <button className="action-button" onClick={onImport} title="Importar Planilha">
+              <Upload size={18} />
+              <span>Importar</span>
+            </button>
+            <button className="action-button danger" onClick={onClearData} title="Limpar Todos os Dados">
+              <Trash2 size={18} />
+              <span>Limpar</span>
+            </button>
+          </div>
           <div className="search-box">
             <Search size={20} />
             <input type="text" placeholder="Buscar..." />

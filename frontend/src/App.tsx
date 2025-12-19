@@ -4,7 +4,9 @@ import Header from './components/Header'
 import StatsCards from './components/StatsCards'
 import ChartsSection from './components/ChartsSection'
 import RecentTransactions from './components/RecentTransactions'
-import { fetchDashboardData } from './services/api'
+import TransactionModal from './components/TransactionModal'
+import ImportModal from './components/ImportModal'
+import { fetchDashboardData, clearAllData } from './services/api'
 
 export interface DashboardData {
   balance: {
@@ -31,6 +33,8 @@ function App() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -48,6 +52,25 @@ function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleClearData = async () => {
+    if (!window.confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+      return
+    }
+
+    try {
+      await clearAllData()
+      await loadData()
+      alert('Todos os dados foram limpos com sucesso!')
+    } catch (err) {
+      alert('Erro ao limpar dados. Tente novamente.')
+      console.error('Erro ao limpar dados:', err)
+    }
+  }
+
+  const handleDataUpdated = () => {
+    loadData()
   }
 
   if (loading) {
@@ -77,7 +100,11 @@ function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header
+        onNewTransaction={() => setIsTransactionModalOpen(true)}
+        onImport={() => setIsImportModalOpen(true)}
+        onClearData={handleClearData}
+      />
       <main className="main-content">
         <StatsCards balance={data.balance} />
         <div className="dashboard-grid">
@@ -85,6 +112,18 @@ function App() {
           <RecentTransactions transactions={data.transactions} />
         </div>
       </main>
+      
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        onSuccess={handleDataUpdated}
+      />
+      
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={handleDataUpdated}
+      />
     </div>
   )
 }

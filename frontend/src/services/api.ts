@@ -2,6 +2,15 @@ import type { DashboardData } from '../App'
 
 const API_BASE_URL = 'http://localhost:3001/api'
 
+export interface Transaction {
+  id: number
+  date: string
+  description: string
+  amount: number
+  type: 'income' | 'expense'
+  category: string
+}
+
 export const fetchDashboardData = async (): Promise<DashboardData> => {
   try {
     const response = await fetch(`${API_BASE_URL}/dashboard`)
@@ -15,6 +24,48 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
     // Retornar dados mockados em caso de erro
     return getMockData()
   }
+}
+
+export const createTransaction = async (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
+  const response = await fetch(`${API_BASE_URL}/transactions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(transaction),
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
+export const clearAllData = async (): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/all`, {
+    method: 'DELETE',
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+}
+
+export const importTransactions = async (transactions: Omit<Transaction, 'id'>[]): Promise<{ message: string; transactions: Transaction[] }> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/import`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ transactions }),
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
 }
 
 const getMockData = (): DashboardData => {
