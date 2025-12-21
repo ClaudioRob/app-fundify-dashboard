@@ -174,3 +174,4 @@ const TransactionModal = ({ isOpen, onClose, onSuccess }: TransactionModalProps)
 }
 
 export default TransactionModal
+
