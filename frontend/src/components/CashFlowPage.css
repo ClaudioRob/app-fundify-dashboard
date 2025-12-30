@@ -186,29 +186,29 @@
 }
 
 .income-row {
-  background: rgba(16, 185, 129, 0.02);
+  background: var(--bg-card);
 }
 
 .income-row:hover {
-  background: rgba(16, 185, 129, 0.05);
+  background: var(--bg-hover);
 }
 
 .expense-row {
-  background: rgba(239, 68, 68, 0.05);
+  background: var(--bg-card);
 }
 
 .expense-row:hover {
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--bg-hover);
 }
 
 /* Valores de receitas e despesas */
 .income-value {
-  color: #10b981;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .expense-value {
-  color: #ef4444;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -225,6 +225,7 @@
 
 .income-total .value-cell {
   color: #10b981;
+  font-weight: 600;
 }
 
 .expense-total {
@@ -233,6 +234,7 @@
 
 .expense-total .value-cell {
   color: #ef4444;
+  font-weight: 600;
 }
 
 /* Linhas de saldo */

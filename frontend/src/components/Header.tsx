@@ -53,7 +53,7 @@ const Header = ({ onAdminMode, onCashFlow, selectedMonth, selectedYear, onMonthC
           </div>
           {onCashFlow && (
             <button className="action-button secondary" onClick={onCashFlow} title="Fluxo de Caixa">
-              <span>📈 Fluxo de Caixa</span>
+              <span>Fluxo de Caixa</span>
             </button>
           )}
           <button className="icon-button">
