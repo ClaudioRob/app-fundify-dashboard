@@ -1,0 +1,367 @@
+.cashflow-page {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 2rem;
+}
+
+.cashflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.cashflow-header-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.cashflow-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.year-filter {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+
+.year-button {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.year-button:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.year-button.active {
+  background: var(--primary);
+  color: white;
+}
+
+.close-button {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--text-primary);
+}
+
+.close-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+}
+
+.cashflow-table-container {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(27, 50, 95, 0.06);
+}
+
+.cashflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cashflow-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 10;
+}
+
+.cashflow-table th {
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.category-column {
+  min-width: 250px;
+  position: sticky;
+  left: 0;
+  background: var(--bg-secondary);
+  z-index: 11;
+}
+
+.month-column {
+  text-align: right;
+  min-width: 100px;
+}
+
+.total-column {
+  text-align: right;
+  min-width: 120px;
+  background: var(--bg-tertiary);
+  border-left: 2px solid var(--border);
+}
+
+.cashflow-table tbody tr {
+  transition: background 0.2s;
+}
+
+.cashflow-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.category-cell {
+  padding: 0.75rem;
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.value-cell {
+  padding: 0.75rem;
+  text-align: right;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.total-cell {
+  background: rgba(74, 143, 231, 0.05);
+  border-left: 2px solid var(--border);
+  font-weight: 600;
+}
+
+/* Estilos para seções */
+.section-header td {
+  padding: 1rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}
+
+.income-header td {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.expense-header td {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Linhas de categorias */
+.category-row {
+  background: var(--bg-card);
+}
+
+.income-row {
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.income-row:hover {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.expense-row {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.expense-row:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Valores de receitas e despesas */
+.income-value {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.expense-value {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* Linhas de totais */
+.total-row {
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}
+
+.income-total {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.income-total .value-cell {
+  color: #10b981;
+}
+
+.expense-total {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.expense-total .value-cell {
+  color: #ef4444;
+}
+
+/* Linhas de saldo */
+.balance-row {
+  font-weight: 600;
+  background: var(--bg-secondary);
+}
+
+.balance-row.initial {
+  border-top: 2px solid var(--border);
+}
+
+.balance-row.operational {
+  background: rgba(74, 143, 231, 0.08);
+  border-top: 3px solid var(--border);
+}
+
+.balance-row.final {
+  background: rgba(74, 143, 231, 0.12);
+  border-top: 2px solid var(--border);
+  border-bottom: 3px solid var(--border);
+}
+
+/* Linhas de itens expandidos */
+.item-row {
+  font-size: 0.8rem;
+  background: var(--bg-tertiary);
+}
+
+.item-row:hover {
+  background: var(--bg-hover);
+}
+
+.item-cell {
+  padding: 0.5rem 0.75rem;
+  position: sticky;
+  left: 0;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.item-row:hover .item-cell {
+  background: var(--bg-hover);
+}
+
+/* Botão de expandir */
+.expand-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.expand-button:hover {
+  color: var(--primary);
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .cashflow-page {
+    padding: 1rem;
+  }
+
+  .cashflow-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .cashflow-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .cashflow-table {
+    font-size: 0.75rem;
+  }
+
+  .category-column {
+    min-width: 200px;
+  }
+
+  .month-column {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cashflow-page {
+    padding: 0.5rem;
+  }
+
+  .cashflow-header {
+    margin-bottom: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .cashflow-header-left {
+    width: 100%;
+  }
+
+  .year-filter {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .cashflow-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .cashflow-table th,
+  .value-cell,
+  .category-cell {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .category-column {
+    min-width: 150px;
+  }
+
+  .month-column {
+    min-width: 70px;
+  }
+}

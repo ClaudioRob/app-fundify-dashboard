@@ -6,6 +6,7 @@ import ChartsSection from './components/ChartsSection'
 import RecentTransactions from './components/RecentTransactions'
 import TransactionModal from './components/TransactionModal'
 import AdminDashboard from './components/AdminDashboard'
+import CashFlowPage from './components/CashFlowPage'
 import { fetchDashboardData } from './services/api'
 
 export interface DashboardData {
@@ -35,6 +36,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isAdminMode, setIsAdminMode] = useState(false)
+  const [isCashFlowMode, setIsCashFlowMode] = useState(false)
   
   // Definir mês e ano serão configurados após carregar os dados
   const [selectedMonth, setSelectedMonth] = useState<number | 'all' | null>(null)
@@ -118,6 +120,18 @@ function App() {
     )
   }
 
+  if (isCashFlowMode) {
+    return (
+      <div className="app">
+        <CashFlowPage 
+          transactions={data.transactions} 
+          onClose={() => setIsCashFlowMode(false)}
+          selectedYear={selectedYear === 'all' ? 'all' : selectedYear}
+        />
+      </div>
+    )
+  }
+
   // Filtrar transações por mês e ano selecionados
   const filteredData = {
     ...data,
@@ -158,6 +172,7 @@ function App() {
     <div className="app">
       <Header
         onAdminMode={() => setIsAdminMode(true)}
+        onCashFlow={() => setIsCashFlowMode(true)}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         onMonthChange={setSelectedMonth}

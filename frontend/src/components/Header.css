@@ -82,6 +82,17 @@
   border-color: var(--primary-hover);
 }
 
+.action-button.secondary {
+  background: transparent;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.action-button.secondary:hover {
+  background: rgba(74, 143, 231, 0.1);
+  border-color: var(--primary);
+}
+
 .action-button.danger {
   background: transparent;
   color: #ef4444;
