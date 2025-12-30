@@ -3,6 +3,7 @@ import './Header.css'
 
 interface HeaderProps {
   onAdminMode: () => void
+  onCashFlow?: () => void
   selectedMonth: number | 'all'
   selectedYear: number | 'all'
   onMonthChange: (month: number | 'all') => void
@@ -10,7 +11,7 @@ interface HeaderProps {
   availableYears: number[]
 }
 
-const Header = ({ onAdminMode, selectedMonth, selectedYear, onMonthChange, onYearChange, availableYears }: HeaderProps) => {
+const Header = ({ onAdminMode, onCashFlow, selectedMonth, selectedYear, onMonthChange, onYearChange, availableYears }: HeaderProps) => {
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -50,6 +51,11 @@ const Header = ({ onAdminMode, selectedMonth, selectedYear, onMonthChange, onYea
               ))}
             </select>
           </div>
+          {onCashFlow && (
+            <button className="action-button secondary" onClick={onCashFlow} title="Fluxo de Caixa">
+              <span>📈 Fluxo de Caixa</span>
+            </button>
+          )}
           <button className="icon-button">
             <Bell size={20} />
             <span className="badge">3</span>
