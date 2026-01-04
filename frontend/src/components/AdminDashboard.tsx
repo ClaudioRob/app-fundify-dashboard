@@ -3,6 +3,7 @@ import { X, Edit2, Trash2, Save, Plus, Upload, ChevronUp, ChevronDown, ThumbsUp,
 import { fetchAccountPlan, importAccountPlan, type AccountPlan, clearAccountPlan } from '../services/api'
 import { fetchDashboardData, updateTransaction, deleteTransaction, clearAllData } from '../services/api'
 import ImportModal from './ImportModal'
+import Toast, { ToastMessage, ToastType } from './Toast'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -69,6 +70,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   const [editedAccount, setEditedAccount] = useState<AccountPlan | null>(null)
   const [editedTransaction, setEditedTransaction] = useState<any>(null)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
   
   // Estados para ordenação e filtros do Plano de Contas
   const [accountSortField, setAccountSortField] = useState<SortField | null>(null)
@@ -87,6 +89,16 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   // Estados para filtro de período de data
   const [transactionDateFrom, setTransactionDateFrom] = useState<string>('')
   const [transactionDateTo, setTransactionDateTo] = useState<string>('')
+
+  // Funções para gerenciar toasts
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random()}`
+    setToasts(prev => [...prev, { id, message, type }])
+  }
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
+  }
 
   useEffect(() => {
     loadData()
@@ -164,7 +176,6 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
   const handleAddTransaction = () => {
     try {
-      const newDate = new Date().toISOString().split('T')[0]
       const newId = `NEW_${Date.now()}`
       
       const newTransaction = {
@@ -177,14 +188,14 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         Operação: '',
         OrigemDestino: '',
         Item: '',
-        Data: newDate,
+        Data: '',
         Valor: 0,
-        date: newDate,
+        date: '',
         description: '',
         amount: 0,
         type: 'expense' as 'income' | 'expense',
         category: '',
-        status: 'R' as 'P' | 'R' | 'N',
+        status: 'P' as 'P' | 'R' | 'N',
       }
       
       setTransactions([newTransaction, ...transactions])
@@ -192,7 +203,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       setEditedTransaction({ ...newTransaction })
     } catch (error) {
       console.error('Erro ao adicionar transação:', error)
-      alert('Erro ao adicionar lançamento: ' + error)
+      addToast('Erro ao adicionar lançamento: ' + error, 'error')
     }
   }
 
@@ -201,8 +212,15 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
     setEditedTransaction({ ...transaction })
   }
 
-  const handleIdItemChange = (idItem: string) => {
-    // Se o campo não estiver vazio, buscar no plano de contas
+  const handleIdItemChange = (idItem: string, shouldValidate: boolean = false) => {
+    // Sempre atualizar o Id_Item
+    if (!shouldValidate) {
+      // Apenas atualizar o campo sem validar
+      setEditedTransaction({ ...editedTransaction, Id_Item: idItem })
+      return
+    }
+
+    // Se o campo não estiver vazio, buscar no plano de contas (apenas quando shouldValidate for true)
     if (idItem.trim() !== '') {
       const account = accountPlan.find(acc => String(acc.ID_Conta) === idItem.trim())
       
@@ -222,7 +240,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       } else {
         // Notificar que o item não existe
         setEditedTransaction({ ...editedTransaction, Id_Item: idItem })
-        alert(`Item ${idItem} não encontrado no plano de contas. Por favor, verifique o código ou adicione manualmente os dados.`)
+        addToast(`Item ${idItem} não encontrado no plano de contas. Por favor, verifique o código ou adicione manualmente os dados.`, 'warning')
       }
     } else {
       // Apenas atualizar o Id_Item se estiver vazio
@@ -268,7 +286,10 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         const updated = transactions.filter(t => t.id !== editedTransaction.id)
         setTransactions([result.transaction, ...updated])
         
-        alert('Transação criada com sucesso!')
+        // Limpar edição e mostrar notificação
+        setEditingId(null)
+        setEditedTransaction(null)
+        addToast('Transação criada com sucesso!', 'success')
       } else {
         // Atualizar transação existente
         const transactionId = typeof editedTransaction.id === 'string' 
@@ -280,14 +301,14 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         )
         setTransactions(updated)
         
-        alert('Transação atualizada com sucesso!')
+        // Limpar edição e mostrar notificação
+        setEditingId(null)
+        setEditedTransaction(null)
+        addToast('Transação atualizada com sucesso!', 'success')
       }
-      
-      setEditingId(null)
-      setEditedTransaction(null)
     } catch (err) {
       console.error('Erro ao salvar transação:', err)
-      alert('Erro ao salvar transação')
+      addToast('Erro ao salvar transação', 'error')
     }
   }
 
@@ -298,10 +319,10 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       await deleteTransaction(id as any)
       const updated = transactions.filter(t => t.id !== id)
       setTransactions(updated)
-      alert('Transação excluída com sucesso!')
+      addToast('Transação excluída com sucesso!', 'success')
     } catch (err) {
       console.error('Erro ao excluir transação:', err)
-      alert('Erro ao excluir transação')
+      addToast('Erro ao excluir transação', 'error')
     }
   }
 
@@ -315,10 +336,10 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         // Limpar plano de contas
         await clearAccountPlan()
         setAccountPlan([])
-        alert('Plano de contas limpo com sucesso!')
+        addToast('Plano de contas limpo com sucesso!', 'success')
       } catch (err: any) {
         console.error('Erro ao limpar dados:', err)
-        alert(err.message || 'Erro ao limpar dados. Tente novamente.')
+        addToast(err.message || 'Erro ao limpar dados. Tente novamente.', 'error')
       }
     } else {
       // Para lançamentos, limpar apenas os filtrados
@@ -343,16 +364,16 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
           const remaining = transactions.filter((t: any) => !filteredIds.has(t.id))
           setTransactions(remaining)
           
-          alert(`${filteredTransactions.length} lançamento(s) excluído(s) com sucesso!`)
+          addToast(`${filteredTransactions.length} lançamento(s) excluído(s) com sucesso!`, 'success')
         } else {
           // Limpar todos os lançamentos
           await clearAllData()
           setTransactions([])
-          alert('Todos os lançamentos foram limpos com sucesso!')
+          addToast('Todos os lançamentos foram limpos com sucesso!', 'success')
         }
       } catch (err: any) {
         console.error('Erro ao limpar dados:', err)
-        alert(err.message || 'Erro ao limpar dados. Tente novamente.')
+        addToast(err.message || 'Erro ao limpar dados. Tente novamente.', 'error')
       }
     }
   }
@@ -817,8 +838,8 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                             <input
                               type="text"
                               value={editedTransaction.Id_Item || ''}
-                              onChange={(e) => handleIdItemChange(e.target.value)}
-                              onBlur={(e) => handleIdItemChange(e.target.value)}
+                              onChange={(e) => handleIdItemChange(e.target.value, false)}
+                              onBlur={(e) => handleIdItemChange(e.target.value, true)}
                               className="admin-input"
                               placeholder="Código do item"
                             />
@@ -1000,6 +1021,8 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={handleImportSuccess}
       />
+      
+      <Toast toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }
