@@ -52,10 +52,18 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
   }, [transactions])
 
   const cashFlowData = useMemo(() => {
+    // Definir o ano atual
+    const currentYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear
+    
+    // Filtrar transações com Natureza = Operacional
+    let filteredTransactions = transactions.filter(t => {
+      const natureza = (t as any).Natureza
+      return natureza !== 'Operacional'
+    })
+    
     // Filtrar por ano se necessário
-    let filteredTransactions = transactions
     if (selectedYear !== 'all') {
-      filteredTransactions = transactions.filter(t => {
+      filteredTransactions = filteredTransactions.filter(t => {
         const year = new Date(t.date).getFullYear()
         return year === selectedYear
       })
@@ -63,7 +71,6 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
     // Calcular os 12 meses
     const monthsData: any[] = []
-    const currentYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear
     
     for (let month = 1; month <= 12; month++) {
       const monthTransactions = filteredTransactions.filter(t => {
@@ -194,8 +201,27 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
       })
     })
 
-    // Calcular saldo inicial (0 para o primeiro mês)
-    const initialBalance = 0
+    // Calcular saldo inicial do ano (saldo final de dezembro do ano anterior)
+    let initialBalance = 0
+    
+    // Buscar saldo final de dezembro do ano anterior
+    const previousYearTransactions = transactions.filter(t => {
+      const natureza = (t as any).Natureza
+      if (natureza === 'Operacional') return false
+      const tDate = new Date(t.date)
+      return tDate.getFullYear() < currentYear
+    })
+    
+    // Calcular saldo acumulado até dezembro do ano anterior
+    if (previousYearTransactions.length > 0) {
+      const previousIncome = previousYearTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      const previousExpense = previousYearTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      initialBalance = previousIncome - previousExpense
+    }
 
     // Calcular saldos acumulados
     let runningBalance = initialBalance
@@ -213,8 +239,8 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
   // Calcular totais por linha
   const totalsByRow = useMemo(() => {
-    // Somar todos os saldos iniciais dos 12 meses
-    const totalInitialBalance = cashFlowData.monthsData.reduce((sum, month) => sum + month.initialBalance, 0)
+    // O total do saldo inicial é sempre zero (não é uma soma)
+    const totalInitialBalance = 0
     
     const totals: any = {
       initialBalance: totalInitialBalance,

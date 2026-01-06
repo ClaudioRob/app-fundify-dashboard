@@ -42,7 +42,10 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
   const monthlyChartData = useMemo(() => {
     const monthlyMap = new Map<string, { income: number; expenses: number; sortKey: string }>()
     
-    transactions.forEach((t) => {
+    // Filtrar transações excluindo Natureza = Operacional
+    const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+    
+    filteredTransactions.forEach((t) => {
       const date = new Date(t.date)
       const year = date.getFullYear()
       const month = date.getMonth() + 1
@@ -87,15 +90,47 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
       last12Months = sortedMonths.slice(-12)
     }
     
+    // Calcular saldo inicial do primeiro mês (baseado em transações anteriores)
+    let initialBalance = 0
+    if (last12Months.length > 0) {
+      const firstMonthKey = last12Months[0][0]
+      const previousTransactions = filteredTransactions.filter(t => {
+        const date = new Date(t.date)
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        const sortKey = `${year}-${String(month).padStart(2, '0')}`
+        return sortKey < firstMonthKey
+      })
+      
+      const previousIncome = previousTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      const previousExpenses = previousTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      initialBalance = previousIncome - previousExpenses
+    }
+    
+    // Adicionar saldos acumulados
+    let runningBalance = initialBalance
     return last12Months.map(([sortKey, data]) => {
       const [year, month] = sortKey.split('-')
       const monthIndex = parseInt(month) - 1
       const date = new Date(parseInt(year), monthIndex, 1)
       const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+      
+      const initialBalanceMonth = runningBalance
+      const operationalBalance = data.income - data.expenses
+      const finalBalance = initialBalanceMonth + operationalBalance
+      runningBalance = finalBalance
+      
       return {
         month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+        initialBalance: initialBalanceMonth,
         income: data.income,
-        expenses: data.expenses
+        expenses: data.expenses,
+        operationalBalance: operationalBalance,
+        finalBalance: finalBalance
       }
     })
   }, [transactions, selectedYear])
@@ -261,6 +296,15 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
               <Legend />
               <Line
                 type="monotone"
+                dataKey="initialBalance"
+                stroke="#6B7280"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                name="Saldo Inicial"
+                dot={{ fill: '#6B7280', r: 3 }}
+              />
+              <Line
+                type="monotone"
                 dataKey="income"
                 stroke="#10b981"
                 strokeWidth={3}
@@ -274,6 +318,22 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
                 strokeWidth={3}
                 name="Despesas"
                 dot={{ fill: '#ef4444', r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="operationalBalance"
+                stroke="#f59e0b"
+                strokeWidth={2}
+                name="Saldo Operacional"
+                dot={{ fill: '#f59e0b', r: 3 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="finalBalance"
+                stroke="#4A8FE7"
+                strokeWidth={3}
+                name="Saldo Final"
+                dot={{ fill: '#4A8FE7', r: 5 }}
               />
             </LineChart>
           </ResponsiveContainer>

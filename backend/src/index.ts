@@ -152,11 +152,14 @@ const getAutoStatus = (date: string): 'P' | 'R' => {
 
 // Funções auxiliares
 const calculateBalance = (transactions: Transaction[]) => {
-  const income = transactions
+  // Filtrar transações com Natureza = Operacional
+  const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+  
+  const income = filteredTransactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   
-  const expenses = transactions
+  const expenses = filteredTransactions
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   
@@ -167,10 +170,13 @@ const calculateBalance = (transactions: Transaction[]) => {
 }
 
 const calculateCharts = (transactions: Transaction[]) => {
+  // Filtrar transações com Natureza = Operacional
+  const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+  
   // Agrupar por mês com ano-mês para ordenação correta
   const monthlyMap = new Map<string, { income: number; expenses: number; sortKey: string }>()
   
-  transactions.forEach((t) => {
+  filteredTransactions.forEach((t) => {
     const date = new Date(t.date)
     const year = date.getFullYear()
     const month = date.getMonth()
@@ -209,7 +215,7 @@ const calculateCharts = (transactions: Transaction[]) => {
   // Agrupar por categoria
   const categoryMap = new Map<string, number>()
   
-  transactions
+  filteredTransactions
     .filter((t) => t.type === 'expense')
     .forEach((t) => {
       categoryMap.set(t.category, (categoryMap.get(t.category) || 0) + Math.abs(t.amount))
