@@ -462,6 +462,63 @@ const updateTransactionsByAccountId = (idConta: number | string, updatedAccount:
   return updatedCount
 }
 
+// Função para sincronizar TODOS os lançamentos com o plano de contas atual
+const syncAllTransactionsWithAccountPlan = () => {
+  let updatedCount = 0
+  let notFoundCount = 0
+  const notFoundIds = new Set<string>()
+  
+  console.log('🔄 Iniciando sincronização de lançamentos com plano de contas...')
+  console.log(`📊 Total de lançamentos: ${transactions.length}`)
+  console.log(`📋 Total de contas no plano: ${accountPlan.size}`)
+  
+  transactions.forEach((transaction) => {
+    // Verifica se o lançamento tem Id_Item
+    if (transaction.Id_Item !== undefined && transaction.Id_Item !== null && transaction.Id_Item !== '') {
+      const idItemStr = String(transaction.Id_Item).trim()
+      
+      // Busca a conta correspondente no plano de contas
+      if (accountPlan.has(idItemStr)) {
+        const account = accountPlan.get(idItemStr)!
+        
+        // Atualiza os campos do lançamento com os dados da conta
+        transaction.Natureza = account.Natureza
+        transaction.Tipo = account.Tipo
+        transaction.Categoria = account.Categoria
+        transaction.SubCategoria = account.SubCategoria
+        transaction.Item = account.Conta
+        transaction.category = account.Categoria
+        transaction.description = account.Conta
+        
+        updatedCount++
+      } else {
+        // Id_Item não encontrado no plano de contas
+        notFoundCount++
+        notFoundIds.add(idItemStr)
+      }
+    }
+  })
+  
+  // Salva as transações atualizadas
+  if (updatedCount > 0) {
+    saveTransactions(transactions, nextId)
+  }
+  
+  console.log(`✅ Sincronização concluída: ${updatedCount} lançamentos atualizados`)
+  if (notFoundCount > 0) {
+    console.log(`⚠️  ${notFoundCount} lançamentos com Id_Item não encontrado no plano de contas`)
+    console.log(`   IDs não encontrados: ${Array.from(notFoundIds).join(', ')}`)
+  }
+  
+  return {
+    updatedCount,
+    notFoundCount,
+    notFoundIds: Array.from(notFoundIds),
+    totalTransactions: transactions.length,
+    totalAccounts: accountPlan.size
+  }
+}
+
 // Endpoint para atualizar uma conta específica do plano de contas
 app.put('/api/account-plan/:id', (req: Request, res: Response) => {
   const idParam = req.params.id
@@ -499,6 +556,30 @@ app.put('/api/account-plan/:id', (req: Request, res: Response) => {
     message: 'Conta atualizada com sucesso',
     account: updatedAccount,
     transactionsUpdated: updatedTransactions
+  })
+})
+
+// Endpoint para sincronizar todos os lançamentos com o plano de contas
+app.post('/api/transactions/sync-with-account-plan', (req: Request, res: Response) => {
+  console.log('🔄 Requisição de sincronização recebida')
+  
+  if (accountPlan.size === 0) {
+    return res.status(400).json({ 
+      error: 'Plano de contas vazio. Importe o plano de contas antes de sincronizar.' 
+    })
+  }
+  
+  if (transactions.length === 0) {
+    return res.status(400).json({ 
+      error: 'Nenhum lançamento encontrado para sincronizar.' 
+    })
+  }
+  
+  const result = syncAllTransactionsWithAccountPlan()
+  
+  res.json({
+    message: `Sincronização concluída com sucesso`,
+    ...result
   })
 })
 

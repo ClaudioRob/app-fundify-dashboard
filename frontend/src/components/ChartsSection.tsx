@@ -40,19 +40,28 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
 
   // Calcular dados mensais para os últimos 12 meses baseado na seleção
   const monthlyChartData = useMemo(() => {
-    const monthlyMap = new Map<string, { income: number; expenses: number; sortKey: string }>()
-    
     // Filtrar transações excluindo Natureza = Operacional
-    const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+    let filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
     
-    filteredTransactions.forEach((t) => {
+    // Determinar o ano a ser usado
+    const targetYear = selectedYear && selectedYear !== 'all' ? selectedYear : new Date().getFullYear()
+    
+    // Filtrar apenas transações do ano selecionado para o cálculo mensal
+    const yearTransactions = filteredTransactions.filter(t => {
       const date = new Date(t.date)
-      const year = date.getFullYear()
+      return date.getFullYear() === targetYear
+    })
+    
+    // Agrupar por mês
+    const monthlyMap = new Map<string, { income: number; expenses: number }>()
+    
+    yearTransactions.forEach((t) => {
+      const date = new Date(t.date)
       const month = date.getMonth() + 1
-      const sortKey = `${year}-${String(month).padStart(2, '0')}`
+      const sortKey = `${String(month).padStart(2, '0')}`
       
       if (!monthlyMap.has(sortKey)) {
-        monthlyMap.set(sortKey, { income: 0, expenses: 0, sortKey })
+        monthlyMap.set(sortKey, { income: 0, expenses: 0 })
       }
       
       const monthData = monthlyMap.get(sortKey)!
@@ -63,76 +72,49 @@ const ChartsSection = ({ charts, transactions, selectedMonth, selectedYear }: Ch
       }
     })
     
-    // Ordenar e pegar últimos 12 meses
-    const sortedMonths = Array.from(monthlyMap.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-    
-    let last12Months = sortedMonths
-    
-    // Se um ano específico foi selecionado, mostrar os 12 meses daquele ano
-    if (selectedYear && selectedYear !== 'all') {
-      const yearMonths = sortedMonths.filter(([key]) => key.startsWith(`${selectedYear}-`))
-      
-      // Se temos menos de 12 meses, preencher com meses vazios
-      const allMonthsInYear = []
-      for (let m = 1; m <= 12; m++) {
-        const sortKey = `${selectedYear}-${String(m).padStart(2, '0')}`
-        const existing = yearMonths.find(([key]) => key === sortKey)
-        if (existing) {
-          allMonthsInYear.push(existing)
-        } else {
-          allMonthsInYear.push([sortKey, { income: 0, expenses: 0, sortKey }] as [string, { income: number; expenses: number; sortKey: string }])
-        }
-      }
-      last12Months = allMonthsInYear
-    } else {
-      // Caso "Todos" esteja selecionado, mostrar os últimos 12 meses
-      last12Months = sortedMonths.slice(-12)
-    }
-    
-    // Calcular saldo inicial do primeiro mês (baseado em transações anteriores)
+    // Calcular saldo inicial do ano (baseado em transações anteriores ao ano selecionado)
     let initialBalance = 0
-    if (last12Months.length > 0) {
-      const firstMonthKey = last12Months[0][0]
-      const previousTransactions = filteredTransactions.filter(t => {
-        const date = new Date(t.date)
-        const year = date.getFullYear()
-        const month = date.getMonth() + 1
-        const sortKey = `${year}-${String(month).padStart(2, '0')}`
-        return sortKey < firstMonthKey
-      })
-      
-      const previousIncome = previousTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-      const previousExpenses = previousTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
-      initialBalance = previousIncome - previousExpenses
-    }
+    const previousTransactions = filteredTransactions.filter(t => {
+      const date = new Date(t.date)
+      return date.getFullYear() < targetYear
+    })
     
-    // Adicionar saldos acumulados
+    const previousIncome = previousTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+    const previousExpenses = previousTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+    initialBalance = previousIncome - previousExpenses
+    
+    // Criar array com todos os 12 meses do ano
     let runningBalance = initialBalance
-    return last12Months.map(([sortKey, data]) => {
-      const [year, month] = sortKey.split('-')
-      const monthIndex = parseInt(month) - 1
-      const date = new Date(parseInt(year), monthIndex, 1)
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+    const monthsData = []
+    
+    for (let m = 1; m <= 12; m++) {
+      const monthKey = String(m).padStart(2, '0')
+      const monthData = monthlyMap.get(monthKey) || { income: 0, expenses: 0 }
+      
+      const monthIndex = m - 1
+      const date = new Date(targetYear, monthIndex, 1)
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
       
       const initialBalanceMonth = runningBalance
-      const operationalBalance = data.income - data.expenses
+      const operationalBalance = monthData.income - monthData.expenses
       const finalBalance = initialBalanceMonth + operationalBalance
       runningBalance = finalBalance
       
-      return {
+      monthsData.push({
         month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
         initialBalance: initialBalanceMonth,
-        income: data.income,
-        expenses: data.expenses,
+        income: monthData.income,
+        expenses: monthData.expenses,
         operationalBalance: operationalBalance,
         finalBalance: finalBalance
-      }
-    })
+      })
+    }
+    
+    return monthsData
   }, [transactions, selectedYear])
 
   // Calcular dados de categorias agrupando receitas e despesas separadamente

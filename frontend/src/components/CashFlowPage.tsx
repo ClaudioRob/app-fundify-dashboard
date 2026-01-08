@@ -150,6 +150,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
       })
     })
 
+    // Ordenar receitas: Folha Salarial sempre primeiro, depois alfabético
+    incomeItems.sort((a, b) => {
+      if (a.category === 'Folha Salarial') return -1
+      if (b.category === 'Folha Salarial') return 1
+      return a.category.localeCompare(b.category, 'pt-BR')
+    })
+
     // Agrupar despesas
     const expenseByCategoryAndDesc = new Map<string, Map<string, { items: Transaction[] }>>()
     filteredTransactions.filter(t => t.type === 'expense').forEach(t => {
@@ -199,6 +206,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
         categoryTotal: categoryMonthlyTotals.reduce((sum, val) => sum + val, 0),
         items: itemsList
       })
+    })
+
+    // Ordenar despesas: Folha Salarial sempre primeiro (se existir), depois alfabético
+    expenseItems.sort((a, b) => {
+      if (a.category === 'Folha Salarial') return -1
+      if (b.category === 'Folha Salarial') return 1
+      return a.category.localeCompare(b.category, 'pt-BR')
     })
 
     // Calcular saldo inicial do ano (saldo final de dezembro do ano anterior)

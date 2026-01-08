@@ -167,6 +167,29 @@ export const updateAccountPlan = async (
   return response.json()
 }
 
+export const syncTransactionsWithAccountPlan = async (): Promise<{
+  message: string
+  updatedCount: number
+  notFoundCount: number
+  notFoundIds: string[]
+  totalTransactions: number
+  totalAccounts: number
+}> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/sync-with-account-plan`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
 export const importTransactions = async (
   transactions: any[], 
   validateAccountPlan: boolean = true
