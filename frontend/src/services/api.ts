@@ -147,6 +147,25 @@ export const fetchAccountPlan = async (): Promise<AccountPlan[]> => {
   return response.json()
 }
 
+export const createAccountPlan = async (
+  accountData: AccountPlan
+): Promise<{ message: string; account: AccountPlan }> => {
+  const response = await fetch(`${API_BASE_URL}/account-plan`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(accountData),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
 export const updateAccountPlan = async (
   id: number | string, 
   accountData: Partial<AccountPlan>

@@ -142,13 +142,23 @@ let nextId = loadedData.nextId
 let accountPlan: Map<number | string, AccountPlan> = loadAccountPlan()
 
 // Função helper para determinar status automático
-// Datas futuras = P (Previsto), datas passadas = A (Atrasado)
-// Status R (Realizado) só pode ser definido manualmente pelo usuário
-const getAutoStatus = (date: string): 'P' | 'A' => {
+// Lançamentos anteriores a Jan/2026 = R (Realizado)
+// A partir de Jan/2026: Datas futuras = P (Previsto), datas passadas = A (Atrasado)
+// Status R para lançamentos de 2026 em diante só pode ser definido manualmente
+const getAutoStatus = (date: string): 'P' | 'A' | 'R' => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const transactionDate = new Date(date)
   transactionDate.setHours(0, 0, 0, 0)
+  const jan2026 = new Date('2026-01-01')
+  jan2026.setHours(0, 0, 0, 0)
+  
+  // Lançamentos anteriores a Jan/2026 são automaticamente Realizados
+  if (transactionDate < jan2026) {
+    return 'R'
+  }
+  
+  // A partir de Jan/2026: futuro = Previsto, passado = Atrasado
   return transactionDate > today ? 'P' : 'A'
 }
 
@@ -268,10 +278,10 @@ app.post('/api/transactions', (req: Request, res: Response) => {
     category: normalizeString(category),
     status: req.body.status || getAutoStatus(date),
     // Incluir campos adicionais do plano de contas
-    Id_Item: req.body.Id_Item ? normalizeString(req.body.Id_Item) : undefined,
+    Id_Item: req.body.Id_Item ? normalizeString(String(req.body.Id_Item)) : undefined,
     Natureza: req.body.Natureza ? normalizeString(req.body.Natureza) : undefined,
     Tipo: req.body.Tipo ? normalizeString(req.body.Tipo) : undefined,
-    Categoria: req.body.Categoria ? normalizeString(req.body.Categoria) : undefined,
+    Categoria: req.body.Categoria ? normalizeString(req.body.Categoria) : (req.body.category ? normalizeString(req.body.category) : undefined),
     SubCategoria: req.body.SubCategoria ? normalizeString(req.body.SubCategoria) : undefined,
     Operação: req.body.Operação ? normalizeString(req.body.Operação) : undefined,
     OrigemDestino: req.body.OrigemDestino ? normalizeString(req.body.OrigemDestino) : undefined,
@@ -521,15 +531,65 @@ const syncAllTransactionsWithAccountPlan = () => {
   }
 }
 
+// Endpoint para criar uma nova conta no plano de contas
+app.post('/api/account-plan', (req: Request, res: Response) => {
+  const accountData = req.body
+  
+  // Validar se ID_Conta foi fornecido
+  if (!accountData.ID_Conta && accountData.ID_Conta !== 0) {
+    return res.status(400).json({ error: 'ID_Conta é obrigatório' })
+  }
+  
+  const id = accountData.ID_Conta
+  
+  // Verificar se já existe uma conta com esse ID
+  if (accountPlan.has(id)) {
+    return res.status(409).json({ error: `Conta com ID ${id} já existe` })
+  }
+  
+  // Criar nova conta
+  const newAccount: AccountPlan = {
+    ID_Conta: id,
+    Natureza: normalizeString(accountData.Natureza || ''),
+    Tipo: normalizeString(accountData.Tipo || ''),
+    Categoria: normalizeString(accountData.Categoria || ''),
+    SubCategoria: normalizeString(accountData.SubCategoria || ''),
+    Conta: normalizeString(accountData.Conta || ''),
+  }
+  
+  // Adicionar ao mapa
+  accountPlan.set(id, newAccount)
+  
+  // Salvar o plano de contas atualizado
+  saveAccountPlan(accountPlan)
+  
+  console.log(`✅ Nova conta criada: ID=${id}, Conta=${newAccount.Conta}`)
+  
+  res.status(201).json({ 
+    message: 'Conta criada com sucesso',
+    account: newAccount
+  })
+})
+
 // Endpoint para atualizar uma conta específica do plano de contas
 app.put('/api/account-plan/:id', (req: Request, res: Response) => {
   const idParam = req.params.id
-  const id = isNaN(Number(idParam)) ? idParam : parseInt(idParam)
   const updateData = req.body
   
-  // Verifica se a conta existe
-  if (!accountPlan.has(id)) {
-    return res.status(404).json({ error: 'Conta não encontrada no plano de contas' })
+  // Tentar encontrar a conta com diferentes tipos de ID
+  // O ID pode estar armazenado como string ou número no Map
+  let id: string | number = idParam
+  if (!accountPlan.has(idParam)) {
+    // Tentar converter para número se possível
+    const numId = parseInt(idParam)
+    if (!isNaN(numId) && accountPlan.has(numId)) {
+      id = numId
+    } else {
+      return res.status(404).json({ 
+        error: 'Conta não encontrada no plano de contas',
+        debug: { receivedId: idParam, accountPlanKeys: Array.from(accountPlan.keys()).slice(0, 10) }
+      })
+    }
   }
   
   // Obtém a conta atual

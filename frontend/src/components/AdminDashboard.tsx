@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Edit2, Trash2, Save, Plus, Upload, ChevronUp, ChevronDown, ThumbsUp, ThumbsDown, Clock, AlertCircle } from './icons'
-import { fetchAccountPlan, importAccountPlan, type AccountPlan, clearAccountPlan } from '../services/api'
+import { fetchAccountPlan, importAccountPlan, createAccountPlan, updateAccountPlan, type AccountPlan, clearAccountPlan } from '../services/api'
 import { fetchDashboardData, updateTransaction, deleteTransaction, clearAllData } from '../services/api'
 import ImportModal from './ImportModal'
 import Toast, { ToastMessage, ToastType } from './Toast'
@@ -14,13 +14,23 @@ type SortField = string
 type SortDirection = 'asc' | 'desc' | null
 
 // Função helper para determinar status automático
-// Datas futuras = P (Previsto), datas passadas = A (Atrasado)
-// Status R (Realizado) só pode ser definido manualmente pelo usuário
-const getAutoStatus = (date: string): 'P' | 'A' => {
+// Lançamentos anteriores a Jan/2026 = R (Realizado)
+// A partir de Jan/2026: Datas futuras = P (Previsto), datas passadas = A (Atrasado)
+// Status R para lançamentos de 2026 em diante só pode ser definido manualmente
+const getAutoStatus = (date: string): 'P' | 'A' | 'R' => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const transactionDate = new Date(date)
   transactionDate.setHours(0, 0, 0, 0)
+  const jan2026 = new Date('2026-01-01')
+  jan2026.setHours(0, 0, 0, 0)
+  
+  // Lançamentos anteriores a Jan/2026 são automaticamente Realizados
+  if (transactionDate < jan2026) {
+    return 'R'
+  }
+  
+  // A partir de Jan/2026: futuro = Previsto, passado = Atrasado
   return transactionDate > today ? 'P' : 'A'
 }
 
@@ -145,20 +155,64 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
     if (!editedAccount) return
 
     try {
-      const updated = accountPlan.map(acc => 
-        acc.ID_Conta === editedAccount.ID_Conta ? editedAccount : acc
-      )
-      setAccountPlan(updated)
+      // Verificar se é uma nova conta (o editingId original começa com NEW_)
+      const isNewAccount = String(editingId).startsWith('NEW_')
       
-      // Atualizar no backend
-      await importAccountPlan(updated)
+      if (isNewAccount) {
+        // Validar campos obrigatórios para nova conta
+        if (!editedAccount.ID_Conta || String(editedAccount.ID_Conta).trim() === '') {
+          addToast('Por favor, defina um ID_Conta válido antes de salvar', 'error')
+          return
+        }
+        
+        // Verificar se o ID ainda é temporário (não foi alterado pelo usuário)
+        if (String(editedAccount.ID_Conta).startsWith('NEW_')) {
+          addToast('Por favor, altere o ID_Conta temporário para um ID definitivo', 'error')
+          return
+        }
+        
+        // Verificar se já existe uma conta com esse ID (excluindo o temporário)
+        const existingAccount = accountPlan.find(acc => 
+          String(acc.ID_Conta) === String(editedAccount.ID_Conta) && 
+          !String(acc.ID_Conta).startsWith('NEW_')
+        )
+        if (existingAccount) {
+          addToast(`Já existe uma conta com ID ${editedAccount.ID_Conta}`, 'error')
+          return
+        }
+        
+        // Criar nova conta no backend
+        const result = await createAccountPlan(editedAccount)
+        
+        // Atualizar lista local removendo o temporário e adicionando o salvo
+        const updated = accountPlan.filter(acc => acc.ID_Conta !== editingId)
+        setAccountPlan([...updated, result.account])
+        
+        addToast('Conta criada com sucesso!', 'success')
+      } else {
+        // Atualizar conta existente
+        const result = await updateAccountPlan(editedAccount.ID_Conta, editedAccount)
+        
+        // Atualizar lista local
+        const updated = accountPlan.map(acc => 
+          acc.ID_Conta === editedAccount.ID_Conta ? result.account : acc
+        )
+        setAccountPlan(updated)
+        
+        if (result.transactionsUpdated > 0) {
+          addToast(`Conta atualizada! ${result.transactionsUpdated} lançamento(s) sincronizado(s)`, 'success')
+          // Recarregar transações para refletir as mudanças
+          loadData()
+        } else {
+          addToast('Conta atualizada com sucesso!', 'success')
+        }
+      }
       
       setEditingId(null)
       setEditedAccount(null)
-      alert('Conta atualizada com sucesso!')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar conta:', err)
-      alert('Erro ao salvar conta')
+      addToast('Erro ao salvar conta: ' + (err.message || 'Erro desconhecido'), 'error')
     }
   }
 
@@ -177,17 +231,33 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   }
 
   const handleAddAccount = () => {
+    // Gerar sugestão de ID baseado no maior ID numérico existente
+    const numericIds = accountPlan
+      .map(acc => parseInt(String(acc.ID_Conta)))
+      .filter(id => !isNaN(id))
+    const nextId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1
+    
+    const tempId = `NEW_${Date.now()}`
     const newAccount: AccountPlan = {
-      ID_Conta: `NEW_${Date.now()}`,
+      ID_Conta: tempId,
       Natureza: '',
       Tipo: '',
       Categoria: '',
       SubCategoria: '',
       Conta: ''
     }
-    setAccountPlan([...accountPlan, newAccount])
-    setEditingId(newAccount.ID_Conta)
-    setEditedAccount({ ...newAccount })
+    
+    // Adicionar no topo da lista para facilitar visualização
+    setAccountPlan([newAccount, ...accountPlan])
+    setEditingId(tempId)
+    
+    // Pré-preencher com sugestão de ID
+    setEditedAccount({ 
+      ...newAccount,
+      ID_Conta: String(nextId) // Sugestão de próximo ID
+    })
+    
+    addToast(`Nova conta adicionada. Sugestão de ID: ${nextId}`, 'info')
   }
 
   const handleAddTransaction = () => {
@@ -296,11 +366,11 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         
         if (!response.ok) throw new Error('Erro ao criar transação')
         
-        const result = await response.json()
+        const newTransaction = await response.json()
         
         // Atualizar lista removendo a temporária e adicionando a nova
         const updated = transactions.filter(t => t.id !== editedTransaction.id)
-        setTransactions([result.transaction, ...updated])
+        setTransactions([newTransaction, ...updated])
         
         // Limpar edição e mostrar notificação
         setEditingId(null)
