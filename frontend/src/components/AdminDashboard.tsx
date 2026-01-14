@@ -1060,7 +1060,11 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                           <td>{transaction.OrigemDestino || '-'}</td>
                           <td>{transaction.Item || '-'}</td>
                           <td>{formatDate(transaction.Data || transaction.date)}</td>
-                          <td className={transaction.Natureza?.toLowerCase().includes('receita') ? 'positive' : 'negative'}>
+                          <td className={
+                            transaction.Tipo?.toLowerCase() === 'crédito' || transaction.type === 'income' 
+                              ? 'positive' 
+                              : 'negative'
+                          }>
                             {formatCurrency(transaction.Valor || transaction.amount || 0)}
                           </td>
                           <td>

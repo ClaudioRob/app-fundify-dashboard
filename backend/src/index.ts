@@ -240,6 +240,74 @@ const calculateCharts = (transactions: Transaction[]) => {
   return { monthly, categories }
 }
 
+// Função genérica para duplicar lançamentos a partir de Jan/2026
+// Suporta: 600 -> 500, 601 -> 501
+const createDuplicateTransaction = (originalTransaction: Transaction): Transaction | null => {
+  const idItemStr = String(originalTransaction.Id_Item).trim()
+  
+  // Verificar se é um dos códigos de origem suportados
+  const mappings: { [key: string]: string } = {
+    '600': '500',
+    '601': '501',
+    '602': '502'
+  }
+  
+  const targetCode = mappings[idItemStr]
+  if (!targetCode) {
+    return null
+  }
+  
+  // Verificar se a data é >= Jan/2026
+  const transactionDate = new Date(originalTransaction.date)
+  const jan2026 = new Date('2026-01-01')
+  if (transactionDate < jan2026) {
+    return null
+  }
+  
+  // Buscar dados da conta destino no plano de contas
+  const targetAccount = accountPlan.get(targetCode) || accountPlan.get(parseInt(targetCode))
+  
+  if (!targetAccount) {
+    console.warn(`⚠️  Conta ${targetCode} não encontrada no plano de contas. Duplicação não será realizada.`)
+    return null
+  }
+  
+  // Determinar operação baseada no Tipo da conta destino
+  const operacaoTarget = targetAccount.Tipo === 'Crédito' ? 'Crédito Em Conta' : 
+                        targetAccount.Tipo === 'Débito' ? 'Débito Em Conta' : 
+                        originalTransaction.Operação
+  
+  // Inverter amount e type: débito -> crédito ou vice-versa
+  const invertedAmount = -originalTransaction.amount
+  const invertedType: 'income' | 'expense' = originalTransaction.type === 'expense' ? 'income' : 'expense'
+  const invertedValor = Math.abs(originalTransaction.Valor || 0)
+  
+  // Criar transação duplicada com código destino usando características da conta destino
+  const duplicate: Transaction = {
+    id: nextId++,
+    date: originalTransaction.date,
+    description: normalizeString(targetAccount.Conta),
+    amount: invertedAmount,
+    type: invertedType,
+    category: normalizeString(targetAccount.Categoria),
+    status: originalTransaction.status,
+    // Campos do plano de contas usando conta destino REAL do plano de contas
+    Id_Item: targetCode,
+    Natureza: normalizeString(targetAccount.Natureza),
+    Tipo: normalizeString(targetAccount.Tipo),
+    Categoria: normalizeString(targetAccount.Categoria),
+    SubCategoria: normalizeString(targetAccount.SubCategoria),
+    Operação: operacaoTarget,
+    OrigemDestino: originalTransaction.OrigemDestino,
+    Item: normalizeString(targetAccount.Conta),
+    Data: originalTransaction.Data,
+    Valor: invertedValor,
+  }
+  
+  console.log(`🔄 Lançamento duplicado automaticamente: ${idItemStr} -> ${targetCode} (Data: ${originalTransaction.date})`)
+  return duplicate
+}
+
 const getDashboardData = (): DashboardData => {
   const balance = calculateBalance(transactions)
   const charts = calculateCharts(transactions)
@@ -291,6 +359,14 @@ app.post('/api/transactions', (req: Request, res: Response) => {
   }
   
   transactions.push(transaction)
+  
+  // Verificar se precisa duplicar (600->500 ou 601->501 a partir de Jan/2026)
+  const duplicate = createDuplicateTransaction(transaction)
+  if (duplicate) {
+    transactions.push(duplicate)
+    console.log(`✅ Lançamento automático criado: ID ${duplicate.id} (código ${duplicate.Id_Item}) vinculado ao lançamento ID ${transaction.id} (código ${transaction.Id_Item})`)
+  }
+  
   saveTransactions(transactions, nextId)
   res.status(201).json(transaction)
 })
@@ -779,13 +855,31 @@ app.post('/api/transactions/import', (req: Request, res: Response) => {
     })
   }
   
+  // Adicionar transações originais
   transactions.push(...newTransactions)
+  
+  // Verificar quais transações precisam de duplicação automática (600->500 ou 601->501)
+  const duplicatedTransactions: Transaction[] = []
+  newTransactions.forEach(transaction => {
+    const duplicate = createDuplicateTransaction(transaction)
+    if (duplicate) {
+      duplicatedTransactions.push(duplicate)
+      transactions.push(duplicate)
+    }
+  })
+  
+  if (duplicatedTransactions.length > 0) {
+    console.log(`🔄 ${duplicatedTransactions.length} lançamento(s) duplicado(s) automaticamente (600->500, 601->501)`)
+  }
+  
   saveTransactions(transactions, nextId)
   
   console.log('Importação concluída com sucesso!')
+  const totalMessage = `${newTransactions.length} transações importadas${duplicatedTransactions.length > 0 ? ` + ${duplicatedTransactions.length} lançamento(s) automático(s) (600→500)` : ''}${errors.length > 0 ? `, ${errors.length} erro(s) encontrado(s)` : ''}`
   res.status(201).json({ 
-    message: `${newTransactions.length} transações importadas${errors.length > 0 ? `, ${errors.length} erro(s) encontrado(s)` : ''}`,
+    message: totalMessage,
     transactions: newTransactions,
+    duplicatedTransactions: duplicatedTransactions.length > 0 ? duplicatedTransactions : undefined,
     errors: errors.length > 0 ? errors : undefined
   })
 })
