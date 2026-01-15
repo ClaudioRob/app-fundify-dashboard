@@ -44,6 +44,12 @@ function App() {
 
   useEffect(() => {
     loadData()
+    
+    // Verificar se deve abrir em modo Fluxo de Caixa
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('page') === 'cashflow') {
+      setIsCashFlowMode(true)
+    }
   }, [])
 
   const loadData = async () => {
@@ -148,11 +154,14 @@ function App() {
   }
 
   // Recalcular balanço com base nas transações filtradas
+  // Excluir transações com Natureza = Operacional dos cálculos
+  const operationalFiltered = filteredData.transactions.filter((t: any) => t.Natureza !== 'Operacional')
+  
   const filteredBalance = {
-    income: filteredData.transactions
+    income: operationalFiltered
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + Math.abs(t.amount), 0),
-    expenses: filteredData.transactions
+    expenses: operationalFiltered
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Math.abs(t.amount), 0),
     total: 0,
@@ -188,7 +197,12 @@ function App() {
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
           />
-          <RecentTransactions transactions={filteredData.transactions} />
+          <RecentTransactions 
+            transactions={filteredData.transactions}
+            onViewAll={() => setIsAdminMode(true)}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
         </div>
       </main>
       

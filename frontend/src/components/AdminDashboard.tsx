@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Edit2, Trash2, Save, Plus, Upload, ChevronUp, ChevronDown, ThumbsUp, ThumbsDown, Clock } from './icons'
-import { fetchAccountPlan, importAccountPlan, type AccountPlan, clearAccountPlan } from '../services/api'
+import { X, Edit2, Trash2, Save, Plus, Upload, ChevronUp, ChevronDown, ThumbsUp, ThumbsDown, Clock, AlertCircle } from './icons'
+import { fetchAccountPlan, importAccountPlan, createAccountPlan, updateAccountPlan, type AccountPlan, clearAccountPlan } from '../services/api'
 import { fetchDashboardData, updateTransaction, deleteTransaction, clearAllData } from '../services/api'
 import ImportModal from './ImportModal'
+import Toast, { ToastMessage, ToastType } from './Toast'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -13,40 +14,66 @@ type SortField = string
 type SortDirection = 'asc' | 'desc' | null
 
 // Função helper para determinar status automático
-const getAutoStatus = (date: string): 'P' | 'R' => {
+// Lançamentos anteriores a Jan/2026 = R (Realizado)
+// A partir de Jan/2026: Datas futuras = P (Previsto), datas passadas = A (Atrasado)
+// Status R para lançamentos de 2026 em diante só pode ser definido manualmente
+const getAutoStatus = (date: string): 'P' | 'A' | 'R' => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const transactionDate = new Date(date)
   transactionDate.setHours(0, 0, 0, 0)
-  return transactionDate > today ? 'P' : 'R'
+  const jan2026 = new Date('2026-01-01')
+  jan2026.setHours(0, 0, 0, 0)
+  
+  // Lançamentos anteriores a Jan/2026 são automaticamente Realizados
+  if (transactionDate < jan2026) {
+    return 'R'
+  }
+  
+  // A partir de Jan/2026: futuro = Previsto, passado = Atrasado
+  return transactionDate > today ? 'P' : 'A'
 }
 
 // Função helper para obter cor do status
-const getStatusColor = (status: 'P' | 'R' | 'N'): string => {
+const getStatusColor = (status: 'P' | 'R' | 'N' | 'A'): string => {
   switch (status) {
     case 'P': return '#3498db' // Azul - Previsto
     case 'R': return '#27ae60' // Verde - Realizado
     case 'N': return '#e74c3c' // Vermelho - Não Realizado
+    case 'A': return '#f39c12' // Laranja - Atrasado
     default: return '#95a5a6' // Cinza - Padrão
   }
 }
 
 // Função helper para obter próximo status no ciclo
-const getNextStatus = (currentStatus: 'P' | 'R' | 'N' | undefined, date: string): 'P' | 'R' | 'N' => {
+const getNextStatus = (currentStatus: 'P' | 'R' | 'N' | 'A' | undefined, date: string): 'P' | 'R' | 'N' | 'A' => {
   const current = currentStatus || getAutoStatus(date)
-  // Ciclo: P -> R -> N -> P
-  if (current === 'P') return 'R'
+  // Ciclo: P -> A -> R -> N -> P
+  if (current === 'P') return 'A'
+  if (current === 'A') return 'R'
   if (current === 'R') return 'N'
   return 'P'
 }
 
 // Função helper para obter ícone do status
-const getStatusIcon = (status: 'P' | 'R' | 'N', size: number = 16) => {
+const getStatusIcon = (status: 'P' | 'R' | 'N' | 'A', size: number = 16) => {
   switch (status) {
     case 'R': return <ThumbsUp size={size} />
     case 'N': return <ThumbsDown size={size} />
     case 'P': return <Clock size={size} />
+    case 'A': return <AlertCircle size={size} />
     default: return <Clock size={size} />
+  }
+}
+
+// Função helper para obter título do status
+const getStatusTitle = (status: 'P' | 'R' | 'N' | 'A'): string => {
+  switch (status) {
+    case 'P': return 'Previsto'
+    case 'R': return 'Realizado'
+    case 'N': return 'Não Realizado'
+    case 'A': return 'Atrasado'
+    default: return 'Previsto'
   }
 }
 
@@ -69,6 +96,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   const [editedAccount, setEditedAccount] = useState<AccountPlan | null>(null)
   const [editedTransaction, setEditedTransaction] = useState<any>(null)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
   
   // Estados para ordenação e filtros do Plano de Contas
   const [accountSortField, setAccountSortField] = useState<SortField | null>(null)
@@ -87,6 +115,16 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   // Estados para filtro de período de data
   const [transactionDateFrom, setTransactionDateFrom] = useState<string>('')
   const [transactionDateTo, setTransactionDateTo] = useState<string>('')
+
+  // Funções para gerenciar toasts
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random()}`
+    setToasts(prev => [...prev, { id, message, type }])
+  }
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
+  }
 
   useEffect(() => {
     loadData()
@@ -117,20 +155,64 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
     if (!editedAccount) return
 
     try {
-      const updated = accountPlan.map(acc => 
-        acc.ID_Conta === editedAccount.ID_Conta ? editedAccount : acc
-      )
-      setAccountPlan(updated)
+      // Verificar se é uma nova conta (o editingId original começa com NEW_)
+      const isNewAccount = String(editingId).startsWith('NEW_')
       
-      // Atualizar no backend
-      await importAccountPlan(updated)
+      if (isNewAccount) {
+        // Validar campos obrigatórios para nova conta
+        if (!editedAccount.ID_Conta || String(editedAccount.ID_Conta).trim() === '') {
+          addToast('Por favor, defina um ID_Conta válido antes de salvar', 'error')
+          return
+        }
+        
+        // Verificar se o ID ainda é temporário (não foi alterado pelo usuário)
+        if (String(editedAccount.ID_Conta).startsWith('NEW_')) {
+          addToast('Por favor, altere o ID_Conta temporário para um ID definitivo', 'error')
+          return
+        }
+        
+        // Verificar se já existe uma conta com esse ID (excluindo o temporário)
+        const existingAccount = accountPlan.find(acc => 
+          String(acc.ID_Conta) === String(editedAccount.ID_Conta) && 
+          !String(acc.ID_Conta).startsWith('NEW_')
+        )
+        if (existingAccount) {
+          addToast(`Já existe uma conta com ID ${editedAccount.ID_Conta}`, 'error')
+          return
+        }
+        
+        // Criar nova conta no backend
+        const result = await createAccountPlan(editedAccount)
+        
+        // Atualizar lista local removendo o temporário e adicionando o salvo
+        const updated = accountPlan.filter(acc => acc.ID_Conta !== editingId)
+        setAccountPlan([...updated, result.account])
+        
+        addToast('Conta criada com sucesso!', 'success')
+      } else {
+        // Atualizar conta existente
+        const result = await updateAccountPlan(editedAccount.ID_Conta, editedAccount)
+        
+        // Atualizar lista local
+        const updated = accountPlan.map(acc => 
+          acc.ID_Conta === editedAccount.ID_Conta ? result.account : acc
+        )
+        setAccountPlan(updated)
+        
+        if (result.transactionsUpdated > 0) {
+          addToast(`Conta atualizada! ${result.transactionsUpdated} lançamento(s) sincronizado(s)`, 'success')
+          // Recarregar transações para refletir as mudanças
+          loadData()
+        } else {
+          addToast('Conta atualizada com sucesso!', 'success')
+        }
+      }
       
       setEditingId(null)
       setEditedAccount(null)
-      alert('Conta atualizada com sucesso!')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar conta:', err)
-      alert('Erro ao salvar conta')
+      addToast('Erro ao salvar conta: ' + (err.message || 'Erro desconhecido'), 'error')
     }
   }
 
@@ -149,22 +231,37 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   }
 
   const handleAddAccount = () => {
+    // Gerar sugestão de ID baseado no maior ID numérico existente
+    const numericIds = accountPlan
+      .map(acc => parseInt(String(acc.ID_Conta)))
+      .filter(id => !isNaN(id))
+    const nextId = numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1
+    
+    const tempId = `NEW_${Date.now()}`
     const newAccount: AccountPlan = {
-      ID_Conta: `NEW_${Date.now()}`,
+      ID_Conta: tempId,
       Natureza: '',
       Tipo: '',
       Categoria: '',
       SubCategoria: '',
       Conta: ''
     }
-    setAccountPlan([...accountPlan, newAccount])
-    setEditingId(newAccount.ID_Conta)
-    setEditedAccount({ ...newAccount })
+    
+    // Adicionar no topo da lista para facilitar visualização
+    setAccountPlan([newAccount, ...accountPlan])
+    setEditingId(tempId)
+    
+    // Pré-preencher com sugestão de ID
+    setEditedAccount({ 
+      ...newAccount,
+      ID_Conta: String(nextId) // Sugestão de próximo ID
+    })
+    
+    addToast(`Nova conta adicionada. Sugestão de ID: ${nextId}`, 'info')
   }
 
   const handleAddTransaction = () => {
     try {
-      const newDate = new Date().toISOString().split('T')[0]
       const newId = `NEW_${Date.now()}`
       
       const newTransaction = {
@@ -177,14 +274,14 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         Operação: '',
         OrigemDestino: '',
         Item: '',
-        Data: newDate,
+        Data: '',
         Valor: 0,
-        date: newDate,
+        date: '',
         description: '',
         amount: 0,
         type: 'expense' as 'income' | 'expense',
         category: '',
-        status: 'R' as 'P' | 'R' | 'N',
+        status: 'P' as 'P' | 'R' | 'N' | 'A',
       }
       
       setTransactions([newTransaction, ...transactions])
@@ -192,7 +289,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       setEditedTransaction({ ...newTransaction })
     } catch (error) {
       console.error('Erro ao adicionar transação:', error)
-      alert('Erro ao adicionar lançamento: ' + error)
+      addToast('Erro ao adicionar lançamento: ' + error, 'error')
     }
   }
 
@@ -201,8 +298,15 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
     setEditedTransaction({ ...transaction })
   }
 
-  const handleIdItemChange = (idItem: string) => {
-    // Se o campo não estiver vazio, buscar no plano de contas
+  const handleIdItemChange = (idItem: string, shouldValidate: boolean = false) => {
+    // Sempre atualizar o Id_Item
+    if (!shouldValidate) {
+      // Apenas atualizar o campo sem validar
+      setEditedTransaction({ ...editedTransaction, Id_Item: idItem })
+      return
+    }
+
+    // Se o campo não estiver vazio, buscar no plano de contas (apenas quando shouldValidate for true)
     if (idItem.trim() !== '') {
       const account = accountPlan.find(acc => String(acc.ID_Conta) === idItem.trim())
       
@@ -222,7 +326,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       } else {
         // Notificar que o item não existe
         setEditedTransaction({ ...editedTransaction, Id_Item: idItem })
-        alert(`Item ${idItem} não encontrado no plano de contas. Por favor, verifique o código ou adicione manualmente os dados.`)
+        addToast(`Item ${idItem} não encontrado no plano de contas. Por favor, verifique o código ou adicione manualmente os dados.`, 'warning')
       }
     } else {
       // Apenas atualizar o Id_Item se estiver vazio
@@ -262,13 +366,16 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         
         if (!response.ok) throw new Error('Erro ao criar transação')
         
-        const result = await response.json()
+        const newTransaction = await response.json()
         
         // Atualizar lista removendo a temporária e adicionando a nova
         const updated = transactions.filter(t => t.id !== editedTransaction.id)
-        setTransactions([result.transaction, ...updated])
+        setTransactions([newTransaction, ...updated])
         
-        alert('Transação criada com sucesso!')
+        // Limpar edição e mostrar notificação
+        setEditingId(null)
+        setEditedTransaction(null)
+        addToast('Transação criada com sucesso!', 'success')
       } else {
         // Atualizar transação existente
         const transactionId = typeof editedTransaction.id === 'string' 
@@ -280,14 +387,14 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         )
         setTransactions(updated)
         
-        alert('Transação atualizada com sucesso!')
+        // Limpar edição e mostrar notificação
+        setEditingId(null)
+        setEditedTransaction(null)
+        addToast('Transação atualizada com sucesso!', 'success')
       }
-      
-      setEditingId(null)
-      setEditedTransaction(null)
     } catch (err) {
       console.error('Erro ao salvar transação:', err)
-      alert('Erro ao salvar transação')
+      addToast('Erro ao salvar transação', 'error')
     }
   }
 
@@ -298,10 +405,10 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
       await deleteTransaction(id as any)
       const updated = transactions.filter(t => t.id !== id)
       setTransactions(updated)
-      alert('Transação excluída com sucesso!')
+      addToast('Transação excluída com sucesso!', 'success')
     } catch (err) {
       console.error('Erro ao excluir transação:', err)
-      alert('Erro ao excluir transação')
+      addToast('Erro ao excluir transação', 'error')
     }
   }
 
@@ -315,10 +422,10 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         // Limpar plano de contas
         await clearAccountPlan()
         setAccountPlan([])
-        alert('Plano de contas limpo com sucesso!')
+        addToast('Plano de contas limpo com sucesso!', 'success')
       } catch (err: any) {
         console.error('Erro ao limpar dados:', err)
-        alert(err.message || 'Erro ao limpar dados. Tente novamente.')
+        addToast(err.message || 'Erro ao limpar dados. Tente novamente.', 'error')
       }
     } else {
       // Para lançamentos, limpar apenas os filtrados
@@ -343,16 +450,16 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
           const remaining = transactions.filter((t: any) => !filteredIds.has(t.id))
           setTransactions(remaining)
           
-          alert(`${filteredTransactions.length} lançamento(s) excluído(s) com sucesso!`)
+          addToast(`${filteredTransactions.length} lançamento(s) excluído(s) com sucesso!`, 'success')
         } else {
           // Limpar todos os lançamentos
           await clearAllData()
           setTransactions([])
-          alert('Todos os lançamentos foram limpos com sucesso!')
+          addToast('Todos os lançamentos foram limpos com sucesso!', 'success')
         }
       } catch (err: any) {
         console.error('Erro ao limpar dados:', err)
-        alert(err.message || 'Erro ao limpar dados. Tente novamente.')
+        addToast(err.message || 'Erro ao limpar dados. Tente novamente.', 'error')
       }
     }
   }
@@ -817,8 +924,8 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                             <input
                               type="text"
                               value={editedTransaction.Id_Item || ''}
-                              onChange={(e) => handleIdItemChange(e.target.value)}
-                              onBlur={(e) => handleIdItemChange(e.target.value)}
+                              onChange={(e) => handleIdItemChange(e.target.value, false)}
+                              onBlur={(e) => handleIdItemChange(e.target.value, true)}
                               className="admin-input"
                               placeholder="Código do item"
                             />
@@ -928,7 +1035,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                                 minWidth: '36px',
                                 minHeight: '36px'
                               }}
-                              title={editedTransaction.status === 'P' ? 'Previsto' : editedTransaction.status === 'R' ? 'Realizado' : 'Não Realizado'}
+                              title={getStatusTitle(editedTransaction.status || getAutoStatus(editedTransaction.Data || editedTransaction.date))}
                             >
                               {getStatusIcon(editedTransaction.status || getAutoStatus(editedTransaction.Data || editedTransaction.date), 18)}
                             </button>
@@ -953,7 +1060,11 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                           <td>{transaction.OrigemDestino || '-'}</td>
                           <td>{transaction.Item || '-'}</td>
                           <td>{formatDate(transaction.Data || transaction.date)}</td>
-                          <td className={transaction.Natureza?.toLowerCase().includes('receita') ? 'positive' : 'negative'}>
+                          <td className={
+                            transaction.Tipo?.toLowerCase() === 'crédito' || transaction.type === 'income' 
+                              ? 'positive' 
+                              : 'negative'
+                          }>
                             {formatCurrency(transaction.Valor || transaction.amount || 0)}
                           </td>
                           <td>
@@ -971,7 +1082,7 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                                 minWidth: '32px',
                                 minHeight: '32px'
                               }}
-                              title={(transaction.status || getAutoStatus(transaction.Data || transaction.date)) === 'P' ? 'Previsto' : (transaction.status || getAutoStatus(transaction.Data || transaction.date)) === 'R' ? 'Realizado' : 'Não Realizado'}
+                              title={getStatusTitle(transaction.status || getAutoStatus(transaction.Data || transaction.date))}
                             >
                               {getStatusIcon(transaction.status || getAutoStatus(transaction.Data || transaction.date), 16)}
                             </span>
@@ -1000,6 +1111,8 @@ const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={handleImportSuccess}
       />
+      
+      <Toast toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }

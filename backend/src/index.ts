@@ -105,7 +105,7 @@ interface Transaction {
   amount: number
   type: 'income' | 'expense'
   category: string
-  status?: 'P' | 'R' | 'N'  // P = Previsto, R = Realizado, N = Não Realizado
+  status?: 'P' | 'R' | 'N' | 'A'  // P = Previsto, R = Realizado, N = Não Realizado, A = Atrasado
   // Campos adicionais para compatibilidade com plano de contas
   // 10 colunas da planilha: Id_Item, Natureza, Tipo, Categoria, SubCategoria, Operação, Origem|Destino, Item, Data, Valor
   Id_Item?: number | string
@@ -142,21 +142,36 @@ let nextId = loadedData.nextId
 let accountPlan: Map<number | string, AccountPlan> = loadAccountPlan()
 
 // Função helper para determinar status automático
-const getAutoStatus = (date: string): 'P' | 'R' => {
+// Lançamentos anteriores a Jan/2026 = R (Realizado)
+// A partir de Jan/2026: Datas futuras = P (Previsto), datas passadas = A (Atrasado)
+// Status R para lançamentos de 2026 em diante só pode ser definido manualmente
+const getAutoStatus = (date: string): 'P' | 'A' | 'R' => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const transactionDate = new Date(date)
   transactionDate.setHours(0, 0, 0, 0)
-  return transactionDate > today ? 'P' : 'R'
+  const jan2026 = new Date('2026-01-01')
+  jan2026.setHours(0, 0, 0, 0)
+  
+  // Lançamentos anteriores a Jan/2026 são automaticamente Realizados
+  if (transactionDate < jan2026) {
+    return 'R'
+  }
+  
+  // A partir de Jan/2026: futuro = Previsto, passado = Atrasado
+  return transactionDate > today ? 'P' : 'A'
 }
 
 // Funções auxiliares
 const calculateBalance = (transactions: Transaction[]) => {
-  const income = transactions
+  // Filtrar transações com Natureza = Operacional
+  const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+  
+  const income = filteredTransactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   
-  const expenses = transactions
+  const expenses = filteredTransactions
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0)
   
@@ -167,10 +182,13 @@ const calculateBalance = (transactions: Transaction[]) => {
 }
 
 const calculateCharts = (transactions: Transaction[]) => {
+  // Filtrar transações com Natureza = Operacional
+  const filteredTransactions = transactions.filter(t => t.Natureza !== 'Operacional')
+  
   // Agrupar por mês com ano-mês para ordenação correta
   const monthlyMap = new Map<string, { income: number; expenses: number; sortKey: string }>()
   
-  transactions.forEach((t) => {
+  filteredTransactions.forEach((t) => {
     const date = new Date(t.date)
     const year = date.getFullYear()
     const month = date.getMonth()
@@ -209,7 +227,7 @@ const calculateCharts = (transactions: Transaction[]) => {
   // Agrupar por categoria
   const categoryMap = new Map<string, number>()
   
-  transactions
+  filteredTransactions
     .filter((t) => t.type === 'expense')
     .forEach((t) => {
       categoryMap.set(t.category, (categoryMap.get(t.category) || 0) + Math.abs(t.amount))
@@ -220,6 +238,74 @@ const calculateCharts = (transactions: Transaction[]) => {
     .sort((a, b) => b.amount - a.amount)
   
   return { monthly, categories }
+}
+
+// Função genérica para duplicar lançamentos a partir de Jan/2026
+// Suporta: 600 -> 500, 601 -> 501
+const createDuplicateTransaction = (originalTransaction: Transaction): Transaction | null => {
+  const idItemStr = String(originalTransaction.Id_Item).trim()
+  
+  // Verificar se é um dos códigos de origem suportados
+  const mappings: { [key: string]: string } = {
+    '600': '500',
+    '601': '501',
+    '602': '502'
+  }
+  
+  const targetCode = mappings[idItemStr]
+  if (!targetCode) {
+    return null
+  }
+  
+  // Verificar se a data é >= Jan/2026
+  const transactionDate = new Date(originalTransaction.date)
+  const jan2026 = new Date('2026-01-01')
+  if (transactionDate < jan2026) {
+    return null
+  }
+  
+  // Buscar dados da conta destino no plano de contas
+  const targetAccount = accountPlan.get(targetCode) || accountPlan.get(parseInt(targetCode))
+  
+  if (!targetAccount) {
+    console.warn(`⚠️  Conta ${targetCode} não encontrada no plano de contas. Duplicação não será realizada.`)
+    return null
+  }
+  
+  // Determinar operação baseada no Tipo da conta destino
+  const operacaoTarget = targetAccount.Tipo === 'Crédito' ? 'Crédito Em Conta' : 
+                        targetAccount.Tipo === 'Débito' ? 'Débito Em Conta' : 
+                        originalTransaction.Operação
+  
+  // Inverter amount e type: débito -> crédito ou vice-versa
+  const invertedAmount = -originalTransaction.amount
+  const invertedType: 'income' | 'expense' = originalTransaction.type === 'expense' ? 'income' : 'expense'
+  const invertedValor = Math.abs(originalTransaction.Valor || 0)
+  
+  // Criar transação duplicada com código destino usando características da conta destino
+  const duplicate: Transaction = {
+    id: nextId++,
+    date: originalTransaction.date,
+    description: normalizeString(targetAccount.Conta),
+    amount: invertedAmount,
+    type: invertedType,
+    category: normalizeString(targetAccount.Categoria),
+    status: originalTransaction.status,
+    // Campos do plano de contas usando conta destino REAL do plano de contas
+    Id_Item: targetCode,
+    Natureza: normalizeString(targetAccount.Natureza),
+    Tipo: normalizeString(targetAccount.Tipo),
+    Categoria: normalizeString(targetAccount.Categoria),
+    SubCategoria: normalizeString(targetAccount.SubCategoria),
+    Operação: operacaoTarget,
+    OrigemDestino: originalTransaction.OrigemDestino,
+    Item: normalizeString(targetAccount.Conta),
+    Data: originalTransaction.Data,
+    Valor: invertedValor,
+  }
+  
+  console.log(`🔄 Lançamento duplicado automaticamente: ${idItemStr} -> ${targetCode} (Data: ${originalTransaction.date})`)
+  return duplicate
 }
 
 const getDashboardData = (): DashboardData => {
@@ -260,10 +346,10 @@ app.post('/api/transactions', (req: Request, res: Response) => {
     category: normalizeString(category),
     status: req.body.status || getAutoStatus(date),
     // Incluir campos adicionais do plano de contas
-    Id_Item: req.body.Id_Item ? normalizeString(req.body.Id_Item) : undefined,
+    Id_Item: req.body.Id_Item ? normalizeString(String(req.body.Id_Item)) : undefined,
     Natureza: req.body.Natureza ? normalizeString(req.body.Natureza) : undefined,
     Tipo: req.body.Tipo ? normalizeString(req.body.Tipo) : undefined,
-    Categoria: req.body.Categoria ? normalizeString(req.body.Categoria) : undefined,
+    Categoria: req.body.Categoria ? normalizeString(req.body.Categoria) : (req.body.category ? normalizeString(req.body.category) : undefined),
     SubCategoria: req.body.SubCategoria ? normalizeString(req.body.SubCategoria) : undefined,
     Operação: req.body.Operação ? normalizeString(req.body.Operação) : undefined,
     OrigemDestino: req.body.OrigemDestino ? normalizeString(req.body.OrigemDestino) : undefined,
@@ -273,6 +359,14 @@ app.post('/api/transactions', (req: Request, res: Response) => {
   }
   
   transactions.push(transaction)
+  
+  // Verificar se precisa duplicar (600->500 ou 601->501 a partir de Jan/2026)
+  const duplicate = createDuplicateTransaction(transaction)
+  if (duplicate) {
+    transactions.push(duplicate)
+    console.log(`✅ Lançamento automático criado: ID ${duplicate.id} (código ${duplicate.Id_Item}) vinculado ao lançamento ID ${transaction.id} (código ${transaction.Id_Item})`)
+  }
+  
   saveTransactions(transactions, nextId)
   res.status(201).json(transaction)
 })
@@ -429,6 +523,204 @@ app.delete('/api/account-plan/all', (req: Request, res: Response) => {
   res.json({ message: 'Plano de contas limpo' })
 })
 
+// Função para atualizar lançamentos quando uma conta do plano é modificada
+const updateTransactionsByAccountId = (idConta: number | string, updatedAccount: AccountPlan) => {
+  let updatedCount = 0
+  
+  transactions.forEach((transaction) => {
+    // Verifica se o Id_Item corresponde ao ID_Conta que foi atualizado
+    if (String(transaction.Id_Item) === String(idConta)) {
+      // Atualiza os campos da transação com os dados da conta atualizada
+      transaction.Natureza = updatedAccount.Natureza
+      transaction.Tipo = updatedAccount.Tipo
+      transaction.Categoria = updatedAccount.Categoria
+      transaction.SubCategoria = updatedAccount.SubCategoria
+      transaction.Item = updatedAccount.Conta
+      transaction.category = updatedAccount.Categoria
+      transaction.description = updatedAccount.Conta
+      updatedCount++
+    }
+  })
+  
+  if (updatedCount > 0) {
+    saveTransactions(transactions, nextId)
+    console.log(`✅ ${updatedCount} lançamentos atualizados para ID_Conta ${idConta}`)
+  }
+  
+  return updatedCount
+}
+
+// Função para sincronizar TODOS os lançamentos com o plano de contas atual
+const syncAllTransactionsWithAccountPlan = () => {
+  let updatedCount = 0
+  let notFoundCount = 0
+  const notFoundIds = new Set<string>()
+  
+  console.log('🔄 Iniciando sincronização de lançamentos com plano de contas...')
+  console.log(`📊 Total de lançamentos: ${transactions.length}`)
+  console.log(`📋 Total de contas no plano: ${accountPlan.size}`)
+  
+  transactions.forEach((transaction) => {
+    // Verifica se o lançamento tem Id_Item
+    if (transaction.Id_Item !== undefined && transaction.Id_Item !== null && transaction.Id_Item !== '') {
+      const idItemStr = String(transaction.Id_Item).trim()
+      
+      // Busca a conta correspondente no plano de contas
+      if (accountPlan.has(idItemStr)) {
+        const account = accountPlan.get(idItemStr)!
+        
+        // Atualiza os campos do lançamento com os dados da conta
+        transaction.Natureza = account.Natureza
+        transaction.Tipo = account.Tipo
+        transaction.Categoria = account.Categoria
+        transaction.SubCategoria = account.SubCategoria
+        transaction.Item = account.Conta
+        transaction.category = account.Categoria
+        transaction.description = account.Conta
+        
+        updatedCount++
+      } else {
+        // Id_Item não encontrado no plano de contas
+        notFoundCount++
+        notFoundIds.add(idItemStr)
+      }
+    }
+  })
+  
+  // Salva as transações atualizadas
+  if (updatedCount > 0) {
+    saveTransactions(transactions, nextId)
+  }
+  
+  console.log(`✅ Sincronização concluída: ${updatedCount} lançamentos atualizados`)
+  if (notFoundCount > 0) {
+    console.log(`⚠️  ${notFoundCount} lançamentos com Id_Item não encontrado no plano de contas`)
+    console.log(`   IDs não encontrados: ${Array.from(notFoundIds).join(', ')}`)
+  }
+  
+  return {
+    updatedCount,
+    notFoundCount,
+    notFoundIds: Array.from(notFoundIds),
+    totalTransactions: transactions.length,
+    totalAccounts: accountPlan.size
+  }
+}
+
+// Endpoint para criar uma nova conta no plano de contas
+app.post('/api/account-plan', (req: Request, res: Response) => {
+  const accountData = req.body
+  
+  // Validar se ID_Conta foi fornecido
+  if (!accountData.ID_Conta && accountData.ID_Conta !== 0) {
+    return res.status(400).json({ error: 'ID_Conta é obrigatório' })
+  }
+  
+  const id = accountData.ID_Conta
+  
+  // Verificar se já existe uma conta com esse ID
+  if (accountPlan.has(id)) {
+    return res.status(409).json({ error: `Conta com ID ${id} já existe` })
+  }
+  
+  // Criar nova conta
+  const newAccount: AccountPlan = {
+    ID_Conta: id,
+    Natureza: normalizeString(accountData.Natureza || ''),
+    Tipo: normalizeString(accountData.Tipo || ''),
+    Categoria: normalizeString(accountData.Categoria || ''),
+    SubCategoria: normalizeString(accountData.SubCategoria || ''),
+    Conta: normalizeString(accountData.Conta || ''),
+  }
+  
+  // Adicionar ao mapa
+  accountPlan.set(id, newAccount)
+  
+  // Salvar o plano de contas atualizado
+  saveAccountPlan(accountPlan)
+  
+  console.log(`✅ Nova conta criada: ID=${id}, Conta=${newAccount.Conta}`)
+  
+  res.status(201).json({ 
+    message: 'Conta criada com sucesso',
+    account: newAccount
+  })
+})
+
+// Endpoint para atualizar uma conta específica do plano de contas
+app.put('/api/account-plan/:id', (req: Request, res: Response) => {
+  const idParam = req.params.id
+  const updateData = req.body
+  
+  // Tentar encontrar a conta com diferentes tipos de ID
+  // O ID pode estar armazenado como string ou número no Map
+  let id: string | number = idParam
+  if (!accountPlan.has(idParam)) {
+    // Tentar converter para número se possível
+    const numId = parseInt(idParam)
+    if (!isNaN(numId) && accountPlan.has(numId)) {
+      id = numId
+    } else {
+      return res.status(404).json({ 
+        error: 'Conta não encontrada no plano de contas',
+        debug: { receivedId: idParam, accountPlanKeys: Array.from(accountPlan.keys()).slice(0, 10) }
+      })
+    }
+  }
+  
+  // Obtém a conta atual
+  const currentAccount = accountPlan.get(id)!
+  
+  // Atualiza a conta com os novos dados
+  const updatedAccount: AccountPlan = {
+    ID_Conta: currentAccount.ID_Conta, // ID não pode ser alterado
+    Natureza: normalizeString(updateData.Natureza || currentAccount.Natureza),
+    Tipo: normalizeString(updateData.Tipo || currentAccount.Tipo),
+    Categoria: normalizeString(updateData.Categoria || currentAccount.Categoria),
+    SubCategoria: normalizeString(updateData.SubCategoria || currentAccount.SubCategoria),
+    Conta: normalizeString(updateData.Conta || currentAccount.Conta),
+  }
+  
+  // Atualiza no mapa
+  accountPlan.set(id, updatedAccount)
+  
+  // Salva o plano de contas atualizado
+  saveAccountPlan(accountPlan)
+  
+  // Atualiza automaticamente os lançamentos relacionados
+  const updatedTransactions = updateTransactionsByAccountId(id, updatedAccount)
+  
+  res.json({ 
+    message: 'Conta atualizada com sucesso',
+    account: updatedAccount,
+    transactionsUpdated: updatedTransactions
+  })
+})
+
+// Endpoint para sincronizar todos os lançamentos com o plano de contas
+app.post('/api/transactions/sync-with-account-plan', (req: Request, res: Response) => {
+  console.log('🔄 Requisição de sincronização recebida')
+  
+  if (accountPlan.size === 0) {
+    return res.status(400).json({ 
+      error: 'Plano de contas vazio. Importe o plano de contas antes de sincronizar.' 
+    })
+  }
+  
+  if (transactions.length === 0) {
+    return res.status(400).json({ 
+      error: 'Nenhum lançamento encontrado para sincronizar.' 
+    })
+  }
+  
+  const result = syncAllTransactionsWithAccountPlan()
+  
+  res.json({
+    message: `Sincronização concluída com sucesso`,
+    ...result
+  })
+})
+
 app.post('/api/transactions/import', (req: Request, res: Response) => {
   const { transactions: importedTransactions, validateAccountPlan = true } = req.body
   
@@ -563,13 +855,31 @@ app.post('/api/transactions/import', (req: Request, res: Response) => {
     })
   }
   
+  // Adicionar transações originais
   transactions.push(...newTransactions)
+  
+  // Verificar quais transações precisam de duplicação automática (600->500 ou 601->501)
+  const duplicatedTransactions: Transaction[] = []
+  newTransactions.forEach(transaction => {
+    const duplicate = createDuplicateTransaction(transaction)
+    if (duplicate) {
+      duplicatedTransactions.push(duplicate)
+      transactions.push(duplicate)
+    }
+  })
+  
+  if (duplicatedTransactions.length > 0) {
+    console.log(`🔄 ${duplicatedTransactions.length} lançamento(s) duplicado(s) automaticamente (600->500, 601->501)`)
+  }
+  
   saveTransactions(transactions, nextId)
   
   console.log('Importação concluída com sucesso!')
+  const totalMessage = `${newTransactions.length} transações importadas${duplicatedTransactions.length > 0 ? ` + ${duplicatedTransactions.length} lançamento(s) automático(s) (600→500)` : ''}${errors.length > 0 ? `, ${errors.length} erro(s) encontrado(s)` : ''}`
   res.status(201).json({ 
-    message: `${newTransactions.length} transações importadas${errors.length > 0 ? `, ${errors.length} erro(s) encontrado(s)` : ''}`,
+    message: totalMessage,
     transactions: newTransactions,
+    duplicatedTransactions: duplicatedTransactions.length > 0 ? duplicatedTransactions : undefined,
     errors: errors.length > 0 ? errors : undefined
   })
 })

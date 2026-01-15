@@ -147,6 +147,68 @@ export const fetchAccountPlan = async (): Promise<AccountPlan[]> => {
   return response.json()
 }
 
+export const createAccountPlan = async (
+  accountData: AccountPlan
+): Promise<{ message: string; account: AccountPlan }> => {
+  const response = await fetch(`${API_BASE_URL}/account-plan`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(accountData),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
+export const updateAccountPlan = async (
+  id: number | string, 
+  accountData: Partial<AccountPlan>
+): Promise<{ message: string; account: AccountPlan; transactionsUpdated: number }> => {
+  const response = await fetch(`${API_BASE_URL}/account-plan/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(accountData),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
+export const syncTransactionsWithAccountPlan = async (): Promise<{
+  message: string
+  updatedCount: number
+  notFoundCount: number
+  notFoundIds: string[]
+  totalTransactions: number
+  totalAccounts: number
+}> => {
+  const response = await fetch(`${API_BASE_URL}/transactions/sync-with-account-plan`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
+    throw new Error(error.error || `HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
 export const importTransactions = async (
   transactions: any[], 
   validateAccountPlan: boolean = true

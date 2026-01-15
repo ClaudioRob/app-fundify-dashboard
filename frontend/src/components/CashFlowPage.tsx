@@ -11,6 +11,8 @@ interface Transaction {
   category: string
   Categoria?: string
   SubCategoria?: string
+  Id_Item?: string | number
+  Item?: string
 }
 
 interface CashFlowPageProps {
@@ -50,10 +52,18 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
   }, [transactions])
 
   const cashFlowData = useMemo(() => {
+    // Definir o ano atual
+    const currentYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear
+    
+    // Filtrar transações com Natureza = Operacional
+    let filteredTransactions = transactions.filter(t => {
+      const natureza = (t as any).Natureza
+      return natureza !== 'Operacional'
+    })
+    
     // Filtrar por ano se necessário
-    let filteredTransactions = transactions
     if (selectedYear !== 'all') {
-      filteredTransactions = transactions.filter(t => {
+      filteredTransactions = filteredTransactions.filter(t => {
         const year = new Date(t.date).getFullYear()
         return year === selectedYear
       })
@@ -61,7 +71,6 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
     // Calcular os 12 meses
     const monthsData: any[] = []
-    const currentYear = selectedYear === 'all' ? new Date().getFullYear() : selectedYear
     
     for (let month = 1; month <= 12; month++) {
       const monthTransactions = filteredTransactions.filter(t => {
@@ -112,9 +121,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
       descMap.forEach((data, description) => {
         const monthlyValues = new Array(12).fill(0)
+        let itemCode = ''
         data.items.forEach(item => {
           const month = new Date(item.date).getMonth()
           monthlyValues[month] += Math.abs(item.amount)
+          if (!itemCode && item.Id_Item) {
+            itemCode = String(item.Id_Item)
+          }
         })
         
         monthlyValues.forEach((val, idx) => {
@@ -123,6 +136,7 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
         itemsList.push({
           description,
+          itemCode,
           monthlyValues,
           total: monthlyValues.reduce((sum, val) => sum + val, 0)
         })
@@ -134,6 +148,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
         categoryTotal: categoryMonthlyTotals.reduce((sum, val) => sum + val, 0),
         items: itemsList
       })
+    })
+
+    // Ordenar receitas: Folha Salarial sempre primeiro, depois alfabético
+    incomeItems.sort((a, b) => {
+      if (a.category === 'Folha Salarial') return -1
+      if (b.category === 'Folha Salarial') return 1
+      return a.category.localeCompare(b.category, 'pt-BR')
     })
 
     // Agrupar despesas
@@ -158,9 +179,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
       descMap.forEach((data, description) => {
         const monthlyValues = new Array(12).fill(0)
+        let itemCode = ''
         data.items.forEach(item => {
           const month = new Date(item.date).getMonth()
           monthlyValues[month] += Math.abs(item.amount)
+          if (!itemCode && item.Id_Item) {
+            itemCode = String(item.Id_Item)
+          }
         })
         
         monthlyValues.forEach((val, idx) => {
@@ -169,6 +194,7 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
         itemsList.push({
           description,
+          itemCode,
           monthlyValues,
           total: monthlyValues.reduce((sum, val) => sum + val, 0)
         })
@@ -182,8 +208,34 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
       })
     })
 
-    // Calcular saldo inicial (0 para o primeiro mês)
-    const initialBalance = 0
+    // Ordenar despesas: Folha Salarial sempre primeiro (se existir), depois alfabético
+    expenseItems.sort((a, b) => {
+      if (a.category === 'Folha Salarial') return -1
+      if (b.category === 'Folha Salarial') return 1
+      return a.category.localeCompare(b.category, 'pt-BR')
+    })
+
+    // Calcular saldo inicial do ano (saldo final de dezembro do ano anterior)
+    let initialBalance = 0
+    
+    // Buscar saldo final de dezembro do ano anterior
+    const previousYearTransactions = transactions.filter(t => {
+      const natureza = (t as any).Natureza
+      if (natureza === 'Operacional') return false
+      const tDate = new Date(t.date)
+      return tDate.getFullYear() < currentYear
+    })
+    
+    // Calcular saldo acumulado até dezembro do ano anterior
+    if (previousYearTransactions.length > 0) {
+      const previousIncome = previousYearTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      const previousExpense = previousYearTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      initialBalance = previousIncome - previousExpense
+    }
 
     // Calcular saldos acumulados
     let runningBalance = initialBalance
@@ -201,8 +253,8 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
 
   // Calcular totais por linha
   const totalsByRow = useMemo(() => {
-    // Somar todos os saldos iniciais dos 12 meses
-    const totalInitialBalance = cashFlowData.monthsData.reduce((sum, month) => sum + month.initialBalance, 0)
+    // O total do saldo inicial é sempre zero (não é uma soma)
+    const totalInitialBalance = 0
     
     const totals: any = {
       initialBalance: totalInitialBalance,
@@ -278,13 +330,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
                 <tr className="category-row income-row">
                   <td className="category-cell">
                     <button 
-                      className="expand-button"
+                      className="expand-toggle"
                       onClick={() => toggleCategory(`income-${categoryData.category}`)}
                     >
                       {expandedCategories.has(`income-${categoryData.category}`) ? 
                         <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
-                    {categoryData.category}
+                    <strong>{categoryData.category}</strong>
                   </td>
                   {categoryData.categoryMonthlyTotals.map((value, index) => (
                     <td key={index} className="value-cell income-value">
@@ -298,7 +350,7 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
                 {expandedCategories.has(`income-${categoryData.category}`) && 
                   categoryData.items.map((item: any, itemIndex: number) => (
                     <tr key={`income-item-${catIndex}-${itemIndex}`} className="item-row">
-                      <td className="item-cell">&nbsp;&nbsp;&nbsp;&nbsp;↳ {item.description}</td>
+                      <td className="item-cell">&nbsp;&nbsp;&nbsp;&nbsp;↳ {item.itemCode ? `${item.itemCode} | ${item.description}` : item.description}</td>
                       {item.monthlyValues.map((value: number, idx: number) => (
                         <td key={idx} className="value-cell">
                           {value > 0 ? formatCurrency(value) : '-'}
@@ -335,13 +387,13 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
                 <tr className="category-row expense-row">
                   <td className="category-cell">
                     <button 
-                      className="expand-button"
+                      className="expand-toggle"
                       onClick={() => toggleCategory(`expense-${categoryData.category}`)}
                     >
                       {expandedCategories.has(`expense-${categoryData.category}`) ? 
                         <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
-                    {categoryData.category}
+                    <strong>{categoryData.category}</strong>
                   </td>
                   {categoryData.categoryMonthlyTotals.map((value, index) => (
                     <td key={index} className="value-cell expense-value">
@@ -355,7 +407,7 @@ const CashFlowPage = ({ transactions, onClose, selectedYear: initialYear }: Cash
                 {expandedCategories.has(`expense-${categoryData.category}`) && 
                   categoryData.items.map((item: any, itemIndex: number) => (
                     <tr key={`expense-item-${catIndex}-${itemIndex}`} className="item-row">
-                      <td className="item-cell">&nbsp;&nbsp;&nbsp;&nbsp;↳ {item.description}</td>
+                      <td className="item-cell">&nbsp;&nbsp;&nbsp;&nbsp;↳ {item.itemCode ? `${item.itemCode} | ${item.description}` : item.description}</td>
                       {item.monthlyValues.map((value: number, idx: number) => (
                         <td key={idx} className="value-cell">
                           {value > 0 ? formatCurrency(value) : '-'}

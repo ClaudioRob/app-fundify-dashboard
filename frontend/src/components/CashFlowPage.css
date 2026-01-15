@@ -39,7 +39,7 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-muted);
+  color: #a0a0a0;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -105,7 +105,8 @@
 }
 
 .category-column {
-  min-width: 250px;
+  min-width: 300px;
+  max-width: 350px;
   position: sticky;
   left: 0;
   background: var(--bg-secondary);
@@ -140,15 +141,17 @@
   border-right: 1px solid var(--border);
   font-weight: 500;
   color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+  min-width: 300px;
+  max-width: 350px;
 }
 
 .value-cell {
   padding: 0.75rem;
   text-align: right;
-  color: var(--text-secondary);
+  color: #b0b0b0;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
@@ -157,6 +160,25 @@
   background: rgba(74, 143, 231, 0.05);
   border-left: 2px solid var(--border);
   font-weight: 600;
+}
+
+/* Botão de expandir/recolher */
+.expand-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  color: #a0a0a0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: color 0.2s;
+}
+
+.expand-toggle:hover {
+  color: var(--primary);
 }
 
 /* Estilos para seções */
@@ -168,6 +190,9 @@
   letter-spacing: 0.5px;
   border-top: 2px solid var(--border);
   border-bottom: 2px solid var(--border);
+  position: sticky;
+  left: 0;
+  min-width: 300px;
 }
 
 .income-header td {
@@ -203,12 +228,12 @@
 
 /* Valores de receitas e despesas */
 .income-value {
-  color: var(--text-secondary);
+  color: #b0b0b0;
   font-weight: 500;
 }
 
 .expense-value {
-  color: var(--text-secondary);
+  color: #b0b0b0;
   font-weight: 500;
 }
 
@@ -270,33 +295,22 @@
 
 .item-cell {
   padding: 0.5rem 0.75rem;
+  padding-left: 2rem;
   position: sticky;
   left: 0;
   background: var(--bg-tertiary);
   border-right: 1px solid var(--border);
   color: var(--text-muted);
-  font-style: italic;
+  font-size: 0.8125rem;
+  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+  min-width: 300px;
+  max-width: 350px;
 }
 
 .item-row:hover .item-cell {
   background: var(--bg-hover);
-}
-
-/* Botão de expandir */
-.expand-button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-}
-
-.expand-button:hover {
-  color: var(--primary);
 }
 
 /* Responsividade */
