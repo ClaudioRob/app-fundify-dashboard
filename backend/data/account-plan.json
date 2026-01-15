@@ -1,0 +1,666 @@
+[
+  {
+    "ID_Conta": "101",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Adiantamentos",
+    "Conta": "Adiantamento de Salário"
+  },
+  {
+    "ID_Conta": "102",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Adiantamentos",
+    "Conta": "Adiantamento de Férias"
+  },
+  {
+    "ID_Conta": "103",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Adiantamentos",
+    "Conta": "Adiantamento 13º Salário"
+  },
+  {
+    "ID_Conta": "104",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos",
+    "Conta": "Salário Mensal"
+  },
+  {
+    "ID_Conta": "105",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos",
+    "Conta": "Auxílio Teletrabalho"
+  },
+  {
+    "ID_Conta": "107",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos",
+    "Conta": "13º Salário"
+  },
+  {
+    "ID_Conta": "111",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos de Férias",
+    "Conta": "Salário de Férias"
+  },
+  {
+    "ID_Conta": "112",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos de Férias",
+    "Conta": "Abono de Férias"
+  },
+  {
+    "ID_Conta": "113",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos De Férias",
+    "Conta": "Salário De Férias 1/3"
+  },
+  {
+    "ID_Conta": "114",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos De Férias",
+    "Conta": "Abono De Férias 1/3"
+  },
+  {
+    "ID_Conta": "115",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Proventos",
+    "Conta": "Incentivo Certificação"
+  },
+  {
+    "ID_Conta": "117",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Benefícios",
+    "Conta": "Crédito Cartão Alimentação"
+  },
+  {
+    "ID_Conta": "120",
+    "Natureza": "Receita",
+    "Tipo": "Variável",
+    "Categoria": "Devoluções",
+    "SubCategoria": "Reembolso",
+    "Conta": "Crédito em Conta"
+  },
+  {
+    "ID_Conta": "121",
+    "Natureza": "Receita",
+    "Tipo": "Fixa",
+    "Categoria": "Serviços",
+    "SubCategoria": "Prestação de Serviço",
+    "Conta": "Consultoria Asfabe"
+  },
+  {
+    "ID_Conta": "122",
+    "Natureza": "Receita",
+    "Tipo": "Variável",
+    "Categoria": "Serviços",
+    "SubCategoria": "Prestação de Serviço",
+    "Conta": "Declaração Imposto de Renda"
+  },
+  {
+    "ID_Conta": "123",
+    "Natureza": "Receita",
+    "Tipo": "Variável",
+    "Categoria": "Restituições",
+    "SubCategoria": "Restituições",
+    "Conta": "Restituição de Imposto de Renda"
+  },
+  {
+    "ID_Conta": "126",
+    "Natureza": "Receita",
+    "Tipo": "Variável",
+    "Categoria": "Financiamentos",
+    "SubCategoria": "Empréstimo",
+    "Conta": "Contrato de Empréstimo"
+  },
+  {
+    "ID_Conta": "127",
+    "Natureza": "Receita",
+    "Tipo": "Variável",
+    "Categoria": "Investimentos",
+    "SubCategoria": "Aplicações/Resgates",
+    "Conta": "Resgate de Investimentos"
+  },
+  {
+    "ID_Conta": "200",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Imposto de Renda Mensal"
+  },
+  {
+    "ID_Conta": "202",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Contribuição INSS Mensal"
+  },
+  {
+    "ID_Conta": "203",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Vale Refeição"
+  },
+  {
+    "ID_Conta": "204",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Plano de Saúde"
+  },
+  {
+    "ID_Conta": "205",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Previdência Privada"
+  },
+  {
+    "ID_Conta": "206",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Plano de Saúde Co-Participação"
+  },
+  {
+    "ID_Conta": "207",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Plano Odontológico"
+  },
+  {
+    "ID_Conta": "208",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Convênio Academias"
+  },
+  {
+    "ID_Conta": "209",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos",
+    "Conta": "Campanha Solidária"
+  },
+  {
+    "ID_Conta": "210",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos 13º Salário",
+    "Conta": "Imposto de Renda 13º Salário"
+  },
+  {
+    "ID_Conta": "211",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos de Férias",
+    "Conta": "Imposto de Renda Férias"
+  },
+  {
+    "ID_Conta": "212",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos 13º Salário",
+    "Conta": "Contribuição INSS 13º Salário"
+  },
+  {
+    "ID_Conta": "214",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos de Férias",
+    "Conta": "Contribuição INSS Férias"
+  },
+  {
+    "ID_Conta": "215",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Descontos 13º Salário",
+    "Conta": "Desconto Adiantamento 13º Salário"
+  },
+  {
+    "ID_Conta": "216",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Adiantamentos",
+    "Conta": "Desconto Líquido/Férias Recebidas"
+  },
+  {
+    "ID_Conta": "217",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Folha Salarial",
+    "SubCategoria": "Adiantamentos",
+    "Conta": "Desconto Adiantamento de Salário"
+  },
+  {
+    "ID_Conta": "218",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Saúde",
+    "SubCategoria": "Farmácia",
+    "Conta": "Gasto com Medicamentos"
+  },
+  {
+    "ID_Conta": "221",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Produtos",
+    "Conta": "Compra de Produtos Diversos"
+  },
+  {
+    "ID_Conta": "222",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Serviços",
+    "Conta": "Pagamento de Serviços Diversos"
+  },
+  {
+    "ID_Conta": "223",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Obrigações",
+    "SubCategoria": "Pensão Alimentícia",
+    "Conta": "Pensão Alimentícia"
+  },
+  {
+    "ID_Conta": "224",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Cobranças",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Tarifas Bancárias"
+  },
+  {
+    "ID_Conta": "228",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Financiamentos",
+    "SubCategoria": "Empréstimos",
+    "Conta": "Parcela Financiamento Veículo"
+  },
+  {
+    "ID_Conta": "229",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Financiamentos",
+    "SubCategoria": "Empréstimos",
+    "Conta": "Parcela Financiamento Imóvel"
+  },
+  {
+    "ID_Conta": "230",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Financiamentos",
+    "SubCategoria": "Empréstimos",
+    "Conta": "Parcela de Empréstimo Pessoal"
+  },
+  {
+    "ID_Conta": "231",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Tributárias",
+    "SubCategoria": "Impostos Federais",
+    "Conta": "DARF e DAS MEI"
+  },
+  {
+    "ID_Conta": "232",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Tributárias",
+    "SubCategoria": "Impostos Estaduais",
+    "Conta": "IPVA, Licenciamento e Bombeiros"
+  },
+  {
+    "ID_Conta": "233",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Tributárias",
+    "SubCategoria": "Impostos Municipais",
+    "Conta": "IPTU, TCR e Bombeiros"
+  },
+  {
+    "ID_Conta": "234",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Serviços",
+    "Conta": "Claro Multicombo"
+  },
+  {
+    "ID_Conta": "235",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Consumo",
+    "Conta": "Energia Elétrica"
+  },
+  {
+    "ID_Conta": "236",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Consumo",
+    "Conta": "Água Encanada"
+  },
+  {
+    "ID_Conta": "237",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Serviços",
+    "Conta": "Taxa de Condomínio"
+  },
+  {
+    "ID_Conta": "238",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Serviços",
+    "Conta": "Taxa Extra Condomínio"
+  },
+  {
+    "ID_Conta": "239",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Educação",
+    "SubCategoria": "Educação",
+    "Conta": "Mensalidade Colégio"
+  },
+  {
+    "ID_Conta": "240",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Educação",
+    "SubCategoria": "Educação",
+    "Conta": "Cursos e Treinamentos"
+  },
+  {
+    "ID_Conta": "241",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Consumo",
+    "Conta": "Gás de Cozinha"
+  },
+  {
+    "ID_Conta": "242",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Telefonia",
+    "Conta": "TIM Celular"
+  },
+  {
+    "ID_Conta": "243",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Habitação",
+    "SubCategoria": "Consumo",
+    "Conta": "Água Mineral"
+  },
+  {
+    "ID_Conta": "247",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Transportes",
+    "Conta": "Despesas com Combustível"
+  },
+  {
+    "ID_Conta": "248",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Serviços",
+    "Conta": "Peças, Manutenções e Reparos"
+  },
+  {
+    "ID_Conta": "249",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Lazer",
+    "SubCategoria": "Hospedagem",
+    "Conta": "Despesas com Hospedagem"
+  },
+  {
+    "ID_Conta": "250",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Lazer",
+    "SubCategoria": "Alimentação",
+    "Conta": "Lanches e Refeições"
+  },
+  {
+    "ID_Conta": "251",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Educação",
+    "SubCategoria": "Educação",
+    "Conta": "Material Escolar"
+  },
+  {
+    "ID_Conta": "252",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Documentos",
+    "Conta": "Emissão de Passaporte e Vistos"
+  },
+  {
+    "ID_Conta": "253",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Transportes",
+    "SubCategoria": "Seguros",
+    "Conta": "Youse Seguros Auto"
+  },
+  {
+    "ID_Conta": "254",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Documentos",
+    "Conta": "Autenticações e Validações"
+  },
+  {
+    "ID_Conta": "255",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Despesas Gerais",
+    "SubCategoria": "Transportes",
+    "Conta": "Despesas com Transporte"
+  },
+  {
+    "ID_Conta": "256",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Alimentação",
+    "SubCategoria": "Alimentação",
+    "Conta": "Despesas com Alimentação"
+  },
+  {
+    "ID_Conta": "257",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Lazer",
+    "SubCategoria": "Transportes",
+    "Conta": "Transporte Alternativo"
+  },
+  {
+    "ID_Conta": "258",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Lazer",
+    "SubCategoria": "Transportes",
+    "Conta": "Despesas com Passagens Aéreas"
+  },
+  {
+    "ID_Conta": "259",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Lazer",
+    "SubCategoria": "Consumo",
+    "Conta": "Compras de Souvenirs (Viagens)"
+  },
+  {
+    "ID_Conta": "260",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Serviços",
+    "SubCategoria": "Tecnologia",
+    "Conta": "Assinaturas"
+  },
+  {
+    "ID_Conta": "290",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão Hipercard"
+  },
+  {
+    "ID_Conta": "291",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão BTG"
+  },
+  {
+    "ID_Conta": "292",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão Santander"
+  },
+  {
+    "ID_Conta": "293",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão Caixa"
+  },
+  {
+    "ID_Conta": "294",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão C6Bank"
+  },
+  {
+    "ID_Conta": "295",
+    "Natureza": "Despesa",
+    "Tipo": "Fixa",
+    "Categoria": "Cartões",
+    "SubCategoria": "Faturas",
+    "Conta": "Fatura Cartão NuBank"
+  },
+  {
+    "ID_Conta": "500",
+    "Natureza": "Operacional",
+    "Tipo": "Crédito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Conta Corrente Nubank"
+  },
+  {
+    "ID_Conta": "501",
+    "Natureza": "Operacional",
+    "Tipo": "Crédito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Conta Poupança Santander"
+  },
+  {
+    "ID_Conta": "600",
+    "Natureza": "Operacional",
+    "Tipo": "Débito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Conta Corrente Santander"
+  },
+  {
+    "ID_Conta": "601",
+    "Natureza": "Operacional",
+    "Tipo": "Débito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Transferência Programada"
+  },
+  {
+    "ID_Conta": "602",
+    "Natureza": "Operacional",
+    "Tipo": "Débito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Conta Corrente Santander"
+  },
+  {
+    "ID_Conta": "603",
+    "Natureza": "Operacional",
+    "Tipo": "Débito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Transferências PIX"
+  },
+  {
+    "ID_Conta": "502",
+    "Natureza": "Operacional",
+    "Tipo": "Crédito",
+    "Categoria": "Transferências",
+    "SubCategoria": "Serviços Bancários",
+    "Conta": "Conta Corrente Caixa"
+  },
+  {
+    "ID_Conta": "246",
+    "Natureza": "Despesa",
+    "Tipo": "Variável",
+    "Categoria": "Investimentos",
+    "SubCategoria": "Aplicações",
+    "Conta": "Título de Capitalização Santander"
+  }
+]
